@@ -1,0 +1,78 @@
+<!--登录页面组件-->
+<template id="login-page">
+    <div id="LoginPage" :style=page1 >
+        <div class="login_body"> 
+            <el-row :gutter="25" type="flex" align="middle" style="height: 500px">
+                <el-col :span="9"><div class="grid-content">&nbsp;</div></el-col>
+                <el-col :span="6" align="center"><div class="grid-content">
+                    <el-form ref="form" :model="form">
+                        <el-form-item>
+                            <!--调用用户头像组件-->
+                            <portrait :disabled="true"></portrait>
+                        </el-form-item>
+                        <el-form-item>
+                            <el-input v-model="form.username" placeholder="请输入您的用户名" prefix-icon="el-icon-user" clearable></el-input>
+                        </el-form-item>
+                        <el-form-item>
+                            <el-input v-model="form.password" placeholder="请输入您的密码" prefix-icon="el-icon-lock" show-password></el-input>
+                        </el-form-item>
+                        <el-form-item>
+                            <el-button type="primary" @click="onSubmit" style="width: 150px">登录</el-button>
+                        </el-form-item>
+                    </el-form>
+                </div></el-col>
+                <el-col :span="9"><div class="grid-content">&nbsp;</div></el-col>
+            </el-row>
+        </div>
+    </div>
+</template>
+<script>
+    Vue.component('login-page',{
+        template:'#login-page',
+        data: function(){
+            return { form: { username:'', password:'' } }
+        },
+        computed: { 
+            //实现刷新时页面的显示与隐藏
+            page1: function() { return 'display:' + (sessionStorage.getItem("state")=="OK"?"none":"block"); }
+        },
+        methods: {
+            //登录提交与本地储存数据
+            onSubmit(){
+                var self = this;
+                axios.get('../server/login.php', {
+                    params: {
+                       username:this.form.username, 
+                       password:hex_md5(this.form.password+"myhms")
+                    }
+                })
+                .then(function (response) {
+                    let userdata=response.data;
+                    if(userdata.state=="OK"){
+                        console.log("login successfully!");
+                        //储存数据
+                        sessionStorage.setItem("username", userdata.username);
+                        sessionStorage.setItem("name", userdata.name);
+                        sessionStorage.setItem("sex", userdata.sex);
+                        sessionStorage.setItem("job", userdata.job);
+                        sessionStorage.setItem("telephone", userdata.telephone);
+                        sessionStorage.setItem("permissions", userdata.permissions);
+                        sessionStorage.setItem("currentpage", '1-1');
+                        sessionStorage.setItem("state", userdata.state);
+                        //实现单击按钮跳转页面   
+                        self.$emit("refreshui"); 
+                    }else{
+                        console.log("login failed!");
+                        vue.$message.error('用户名或密码错误！');
+                        sessionStorage.clear(); 
+                    }
+                })
+                .catch(function (error) {
+                    console.log(error);
+                    vue.$message.error('网络异常');
+                    sessionStorage.clear();
+                }) 
+            }
+        }
+    });
+</script>

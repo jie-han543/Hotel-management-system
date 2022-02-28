@@ -1,0 +1,336 @@
+<template id="users-page">
+    <el-tabs v-model="activeName" type="border-card" :style=subpage3()>
+        <el-tab-pane label="用户信息" name="first">
+            <el-table :data="usersdata" style="width: 100%" highlight-current-row @current-change="handleCurrentChange" ref="usersdata">
+                <el-table-column prop="username" label="用户名" width="180"></el-table-column>
+                <el-table-column prop="name" label="姓名" width="150"></el-table-column>
+                <el-table-column prop="sex" label="性别" width="100"></el-table-column>
+                <el-table-column prop="job" label="职位" width="150"></el-table-column>
+                <el-table-column prop="telephone" label="联系电话" width="180"></el-table-column>
+                <el-table-column prop="permissions" label="权限">
+                    <template slot-scope="scope">
+                        <span v-for="item in scope.row.permissions"><el-tag size="mini" effect="plain" disable-transitions >
+                            {{ item == 'room'? '管理客房': (item == 'user'? '管理用户':'查看交易记录') }}
+                        </el-tag>&nbsp;</span>
+                    </template>
+                </el-table-column>
+                <el-table-column label="操作" width="160" align="center" fixed="right">
+                    <template slot="header" slot-scope="scope">
+                        <el-button size="mini" type="primary" style="width: 125px" plain @click="addtype">增加</el-button>
+                    </template>
+                    <template slot-scope="scope">
+                        <el-button size="mini" type="success" plain @click="handleEdit(scope.$index, scope.row)">编辑</el-button>
+                        <el-button size="mini" type="danger" plain @click="handleDelete(scope.$index, scope.row)">删除</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </el-tab-pane>
+
+    <!--用户信息弹窗-->
+        <el-dialog width="35%" title="用户信息" :visible.sync="dialogFormVisible" :close-on-click-modal=false :before-close="handleClose">
+            <el-form :model="user" :rules="rules" ref="user" class="demo-ruleForm" label-position="left" status-icon>
+                <el-form-item label="用户名" :label-width="formLabelWidth" prop="username">
+                    <el-input v-model="user.username" autocomplete="off"></el-input>
+                </el-form-item>
+                <el-form-item label="姓名" :label-width="formLabelWidth" prop="name">
+                    <el-input v-model="user.name" autocomplete="off"></el-input>
+                </el-form-item>
+                <el-form-item label="性别" :label-width="formLabelWidth" prop="sex">
+                    <el-radio-group v-model="user.sex">
+                        <el-radio label="男">男</el-radio>
+                        <el-radio label="女">女</el-radio>
+                    </el-radio-group>
+                </el-form-item>
+                <el-form-item label="职位" :label-width="formLabelWidth" prop="job">
+                    <el-input v-model="user.job" autocomplete="off"></el-input>
+                </el-form-item>
+                <el-form-item label="联系电话" :label-width="formLabelWidth" prop="telephone">
+                    <el-input v-model="user.telephone" autocomplete="off"></el-input>
+                </el-form-item>
+                <el-form-item label="权限" :label-width="formLabelWidth" prop="permissions">
+                    <el-checkbox-group v-model="user.permissions">
+                        <el-checkbox label="room">管理客房</el-checkbox>
+                        <el-checkbox label="user">管理用户</el-checkbox>
+                        <el-checkbox label="record">查看交易记录</el-checkbox>
+                    </el-checkbox-group>
+                </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click="dialogFormVisible = false; resetForm()">取消</el-button>
+                <el-button @click="resetForm()">清空</el-button>
+                <el-button type="primary" @click="submitForm('user')">保存</el-button>
+            </div>
+        </el-dialog>
+
+    </el-tabs>
+</template>
+
+<style>
+    .el-table table td { padding: 5px 0; }
+    .el-table table tbody td { padding: 5px 0; }
+    .el-dropdown-link { cursor: pointer; }
+</style>
+
+<script>
+    Vue.component('users-page', {
+        template:'#users-page',
+        //打开/刷新时获取数据
+        beforeMount: function () {
+            if((sessionStorage.getItem("permissions") & 2) != 0){
+                this.getdata();
+            }
+        },
+        data() {
+        //弹窗校对规则函数
+            var validateUsername = (rule, value, callback) =>{
+                if (value === '') {
+                    callback(new Error('用户名不能为空'));
+                }
+                if (!/^[-A-Za-z0-9]{1,20}$/.test(value.trim())) {
+                    callback(new Error('用户名只能包含字母、数字、_和-，不超过20字'));
+                }
+                callback();
+            };
+            var validateName = (rule, value, callback) =>{
+                if (value === '') {
+                    callback(new Error('姓名不能为空'));
+                }
+                if (value.trim().length > 20) {
+                    callback(new Error('姓名不能超过20个字符'));
+                }
+                callback();
+            };
+            var validateSex = (rule, value, callback) =>{
+                if (value === '') {
+                    callback(new Error('性别不能为空'));
+                }
+                callback();
+            };
+            var validateJob = (rule, value, callback) =>{
+                if(value.trim().length > 20) {
+                    callback(new Error('职位不能超过20个字符'));
+                }
+                callback();
+            };
+            var validateTel = (rule, value, callback) =>{
+                if (value === '') {
+                    callback(new Error('电话不能为空'));
+                }
+                if (!/^[-0-9]{1,20}$/.test(value.trim())) {
+                    callback(new Error('只能包含数字和-，不超过20个字符'));
+                }
+                callback();
+            };
+        //数据
+            return {
+            //后端返回数据
+                usersdata:[],
+                data:{state:'',usersData:[]},
+            //打开的弹窗数据
+                user:{
+                    username:'',
+                    name:'',
+                    sex:'',
+                    job:'',
+                    telephone:'',
+                    permissions:[]
+                },
+            //校对规则    
+                rules: {
+                    username:[
+                        { validator: validateUsername, trigger: 'blur' }
+                    ], 
+                    name:[
+                        { validator: validateName, trigger: 'blur' }
+                    ],
+                    sex:[
+                        { validator: validateSex, trigger: 'change' }
+                    ], 
+                    job:[
+                        { validator: validateJob, trigger: 'blur' }
+                    ],
+                    telephone:[
+                        { validator: validateTel, trigger: 'blur' }
+                    ],
+                },
+            //按钮操作名    
+                op:'',
+            //修改的原用户名    
+                oldusername:'',
+            //单击的行    
+                currentRow: null,
+            //初始激活的表格  
+                activeName: 'first',
+            //弹窗可见设置    
+                dialogFormVisible: false,
+            //弹窗元素宽度    
+                formLabelWidth: '100px'
+            }
+        },
+        methods: {
+        //切换页面
+            subpage3() {
+                var allow = ((sessionStorage.getItem("permissions") & 2) != 0);
+                //if(allow){ this.getdata(); }
+                return 'display:' + ( 
+                    sessionStorage.getItem("currentpage") == "3" && 
+                    allow ? "block":"none") ;
+            },
+        //获取初始数据
+            getdata() {
+                if(sessionStorage.getItem("currentpage") != "3"){return;}
+                var self = this;
+                axios.get('../server/usersinfo.php', {
+                    params: {
+                        username:sessionStorage.getItem("username")//发送用户名以查权限申请获得数据
+                    }
+                })
+                .then(function (response) {
+                    //console.log(response.data);
+                    let data=response.data;
+                    if(data.state=="OK"){
+                        console.log("get data successfully!");
+                        self.usersdata=[];
+                        for (var i = data.usersData.length - 1; i >= 0; i--) {
+                            self.usersdata.push(data.usersData[i]);
+                        }
+                    }else{
+                        console.log('error: get usersinfo state != OK');
+                        vue.$message.error(data.state);
+                    }
+                })
+                .catch(function (error) {
+                    console.log(error);
+                    vue.$message.error('网络异常');
+                }) 
+            },
+        //单击行函数
+            handleCurrentChange(val) {
+                this.currentRow = val;
+            },
+        //按钮函数
+            //编辑行
+            handleEdit(index, row) {
+                this.dialogFormVisible = true;
+                Object.assign(this.user,row);
+                this.oldusername = this.user.username;
+                this.op='update';
+            },
+            //删除行
+            handleDelete(index, row, formName) {
+                var self = this;
+                this.user.username=row.username;
+                this.$confirm('删除后不可恢复，是否确认删除?', '提示', {
+                    confirmButtonText: '确认',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                })
+                .then(() => {
+                    axios.get('../server/changeuser.php', {
+                        params:{
+                            current_username:sessionStorage.getItem("username"),
+                            op:'delete',
+                            username:self.user.username,
+                            permissions:['a','b']
+                        }
+                    })
+                    .then(function (response) {
+                        //console.log(response.data);
+                        let data=response.data;
+                        if(data.state=="OK"){
+                            vue.$message.success('删除成功');
+                            self.getdata();       
+                        }else{
+                            console.log('error: state != OK');
+                            vue.$message.error(data.state);
+                        }
+                    })
+                    .catch(function (error) {
+                        console.log(error);
+                        vue.$message.error('网络异常');
+                    });
+                })
+                .catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消删除'
+                    });          
+                });
+                this.op='delete';
+                //console.log(index, row);
+            },
+            //增加行
+            addtype() {
+                this.user = {
+                    username:'',
+                    name:'',
+                    sex:'',
+                    job:'',
+                    telephone:'',
+                    permissions:[],
+                    status:'N'
+                };
+                this.dialogFormVisible = true;
+                this.op='add';                
+            },
+        //提交弹窗信息函数
+            submitForm(formName){
+                var self = this;
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        axios.get('../server/changeuser.php', {
+                            params:{
+                                current_username:sessionStorage.getItem("username"),
+                                op:self.op,
+                                username:self.user.username,
+                                name:self.user.name,
+                                sex:self.user.sex=='男'?'M':'F',
+                                job:self.user.job,
+                                telephone:self.user.telephone,
+                                permissions:self.user.permissions,
+                                oldusername:self.oldusername
+                            }
+                        })
+                        .then(function (response) {
+                            //console.log(response.data);
+                            let data=response.data;
+                            if(data.state=="OK"){
+                                console.log("change successfully!");
+                                vue.$message.success('操作成功');
+                                self.getdata();
+                                self.dialogFormVisible = false;                    
+                            }else{
+                                console.log('error: change userinfo state != OK');
+                                vue.$message.error(data.state);
+                            }
+                        })
+                        .catch(function (error) {
+                            console.log(error);
+                            vue.$message.error('网络异常');
+                        }) 
+                    } else {
+                        console.log('error submit!!');//未通过表单数据规则验证
+                        return false;
+                    }
+                });
+            },
+        //弹窗关闭时重置函数
+            handleClose(done) {
+                this.resetForm();
+                done();
+            },
+        //清空弹窗数据
+            resetForm() {
+                this.user = {
+                    username:'',
+                    name:'',
+                    sex:'',
+                    job:'',
+                    telephone:'',
+                    permissions:[],
+                    status:'N'
+                };
+            }
+        }
+    });
+</script>

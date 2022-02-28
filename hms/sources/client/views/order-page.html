@@ -1,0 +1,512 @@
+<template id="order-page">
+    <el-tabs v-model="activeName" type="border-card" :style=subpage1_2()>
+    <!--标签页1-散客预约-->
+        <el-tab-pane label="散客预约" name=first><el-row>
+            <el-col :span="1">&nbsp;</el-col>
+            <el-col :span="6"><div class="orderGuest">
+                <el-form ref="guestForm" :rules="rules1" :model="guestForm" label-width="80px" class="demo-ruleForm" >
+                    <el-form-item label="姓名" prop="name">
+                        <el-input v-model="guestForm.name"></el-input>
+                    </el-form-item>
+                    <el-form-item label="联系电话" prop="tel">
+                        <el-input v-model="guestForm.tel"></el-input>
+                    </el-form-item>
+                    <el-form-item label="性别" prop="sex">
+                        <el-radio v-model="guestForm.sex" label="M">男</el-radio>
+                        <el-radio v-model="guestForm.sex" label="F">女</el-radio>
+                    </el-form-item>
+                    <el-form-item label="预抵时间" prop="orderTime">
+                        <el-date-picker v-model="guestForm.orderTime" type="date" placeholder="选择日期" :clearable=false :picker-options="expireTimeOption" @change="showIdleRooms('guestForm')"></el-date-picker>
+                    </el-form-item>
+                    <el-form-item label="预住天数">
+                        <el-input-number v-model="guestForm.keepDays" :step="1" :min="1" step-strictly style="width:250px;" @change="showIdleRooms('guestForm')"></el-input-number>
+                    </el-form-item>
+                    <el-form-item label="预定房数">
+                        {{ checkedNum }}&nbsp;间
+                    </el-form-item>
+                    <el-form-item label="备注">
+                        <el-input type="textarea" :autosize="{ minRows: 3, maxRows: 4}" v-model="guestForm.textarea1"></el-input>
+                    </el-form-item>
+                </el-form>
+
+                <div slot="footer" class="footer">
+                    <el-button @click="CancelAll">取消</el-button>
+                    <el-button type="info" plain @click="clearFilter('guestForm')">重置房间过滤&排序</el-button>
+                    <el-button type="primary" @click="submitForm('guestForm')">提交</el-button>
+                </div>
+            </div></el-col>
+            
+            <el-col :span="17"><div class="orderRoom">
+                <el-table :data="roomsData1" highlight-current-row @current-change="handleCurrentChange" @selection-change="handleSelectionChange" @select="handleSelect" @select-all="handleSelectAll" ref="roomsData1" height="660">
+                    <el-table-column type="selection" width="45"></el-table-column>
+                    <el-table-column prop="roomid" sortable label="房间号" width="90"></el-table-column>
+                    <el-table-column prop="floor" sortable label="楼层" width="75" align="center"></el-table-column>
+                    <el-table-column prop="state" label="状态" width="80" align="center"
+                        :filters=statetype
+                        :filter-method="filterTag2"
+                        filter-placement="bottom-end">
+                        <template slot-scope="scope">
+                            <el-tag size="mini" :type="scope.row.state === 'idle' ? 'success' : (scope.row.state === 'used' ? 'warning' : 'danger')" disable-transitions>{{scope.row.state === 'idle' ? '空闲' : (scope.row.state === 'used' ? '使用中' : '不可用')}}</el-tag>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="price" sortable label="价格" width="100" align="center"></el-table-column>
+                    <el-table-column prop="typename" label="房间类型" width="100"
+                        :filters=type
+                        :filter-method="filterTag"
+                        filter-placement="bottom-end">
+                        <template slot-scope="scope">
+                            <el-tag size="mini" type="primary" disable-transitions>{{scope.row.typename}}</el-tag>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="bedsnum" sortable label="床数" width="75" align="center"></el-table-column>
+                    <el-table-column prop="description" label="描述" :show-overflow-tooltip=true></el-table-column>
+                </el-table>
+            </div></el-col>
+        </el-row></el-tab-pane>
+
+    <!--标签页2-团体预约-->
+        <el-tab-pane label="团体预约" name=second><el-row>
+            <el-col :span="1">&nbsp;</el-col>
+            <el-col :span="6"><div class="orderGuest">
+                <el-form ref="groupForm" :rules="rules2" :model="groupForm" label-width="80px" class="demo-ruleForm" >
+                    <el-form-item label="团队名" prop="groupName">
+                        <el-input v-model="groupForm.groupName"></el-input>
+                    </el-form-item>
+                    <el-form-item label="联系人" prop="contectName">
+                        <el-input v-model="groupForm.contectName"></el-input>
+                    </el-form-item>
+                    <el-form-item label="联系电话" prop="tel">
+                        <el-input v-model="groupForm.tel"></el-input>
+                    </el-form-item>
+                    <el-form-item label="预抵时间" prop="orderTime">
+                        <el-date-picker v-model="groupForm.orderTime" type="date" placeholder="选择日期" :clearable=false :picker-options="expireTimeOption" @change="showIdleRooms('groupForm')"></el-date-picker>
+                    </el-form-item>
+                    <el-form-item label="预住天数">
+                        <el-input-number v-model="groupForm.keepDays" :step="1" :min="1" step-strictly style="width:250px;" @change="showIdleRooms('groupForm')"></el-input-number>
+                    </el-form-item>
+                    <el-form-item label="预定房数">
+                        {{ groupCheckedNum }}&nbsp;间
+                    </el-form-item>
+                    <el-form-item label="备注">
+                        <el-input type="textarea" :autosize="{ minRows: 3, maxRows: 4}" v-model="groupForm.textarea2"></el-input>
+                    </el-form-item>
+                </el-form>
+
+                <div slot="footer" class="footer">
+                    <el-button @click="CancelAll2">取消</el-button>
+                    <el-button type="info" plain @click="clearFilter('groupForm')">重置房间过滤&排序</el-button>
+                    <el-button type="primary" @click="submitForm('groupForm')">提交</el-button>
+                </div>
+            </div></el-col>
+            
+            <el-col :span="17"><div class="orderRoom">
+                <el-table :data="roomsData2" highlight-current-row @current-change="handleCurrentChange" @selection-change="handleSelectionChange" @select="handleSelect2" @select-all="handleSelectAll2" ref="roomsData2" height="660">
+                    <el-table-column type="selection" width="45"></el-table-column>
+                    <el-table-column prop="roomid" sortable label="房间号" width="90"></el-table-column>
+                    <el-table-column prop="floor" sortable label="楼层" width="75" align="center"></el-table-column>
+                    <el-table-column prop="state" label="状态" width="80" align="center"
+                        :filters=statetype
+                        :filter-method="filterTag2"
+                        filter-placement="bottom-end">
+                        <template slot-scope="scope">
+                            <el-tag size="mini" :type="scope.row.state === 'idle' ? 'success' : (scope.row.state === 'used' ? 'warning' : 'danger')" disable-transitions>{{scope.row.state === 'idle' ? '空闲' : (scope.row.state === 'used' ? '使用中' : '不可用')}}</el-tag>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="price" sortable label="价格" width="100" align="center"></el-table-column>
+                    <el-table-column prop="typename" label="房间类型" width="100"
+                        :filters=type
+                        :filter-method="filterTag"
+                        filter-placement="bottom-end">
+                        <template slot-scope="scope">
+                            <el-tag size="mini" type="primary" disable-transitions>{{scope.row.typename}}</el-tag>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="bedsnum" sortable label="床数" width="75" align="center"></el-table-column>
+                    <el-table-column prop="description" label="描述" :show-overflow-tooltip=true></el-table-column>
+                </el-table>
+            </div></el-col>
+        </el-row></el-tab-pane>
+    </el-tabs>
+</template>
+<style>
+    .orderGuest input { width: 250px; }
+    .orderGuest textarea { width: 250px; }
+    .orderRoom { padding-left: 20px; }
+    .orderGuest { margin-top: 60px; }
+    .footer { position: absolute; bottom: 80px; width: 100%; }
+</style>
+<script>
+    Vue.component('order-page', {
+        template:'#order-page',
+        //打开/刷新时获取数据
+        beforeMount: function () {
+            if(sessionStorage.getItem("username") != null){
+                this.getdata();
+            }
+        },
+        data(){
+        //校对规则
+            var validateGroupName = (rule, value, callback) =>{
+                if (value === '') {
+                    callback(new Error('团队名不能为空'));
+                }else if(value.trim().length > 20) {
+                    callback(new Error('团队名不能超过20个字符'));
+                }
+                callback();
+            };
+            var validateName = (rule, value, callback) =>{
+                if (value === '') {
+                    callback(new Error('姓名不能为空'));
+                }else if(value.trim().length > 20) {
+                    callback(new Error('姓名不能超过20个字符'));
+                }
+                callback();
+            };
+            var validateContectName = (rule, value, callback) =>{
+                if (value === '') {
+                    callback(new Error('联系人姓名不能为空'));
+                }else if(value.trim().length > 20) {
+                    callback(new Error('联系人姓名不能超过20个字符'));
+                }
+                callback();
+            };
+            var validateTel = (rule, value, callback) =>{
+                if (value === '') {
+                    callback(new Error('联系电话不能为空'));
+                }
+                if(!/^[-0-9]{1,20}$/.test(value.trim())) {
+                    callback(new Error('只能包含数字和-，不超过20个字符'));
+                }
+                callback();
+            };
+            var validateSex = (rule, value, callback) =>{
+                if (value === '') {
+                    callback(new Error('性别不能为空'));
+                }
+                callback();
+            };
+            var validateOrderTime = (rule, value, callback) =>{
+                if (value === '') {
+                    callback(new Error('请选择预抵日期'));
+                }
+                callback();
+            };
+        //数据
+            return{
+            //顾客预约信息表单
+                guestForm:{
+                    name:'',
+                    tel:'',
+                    sex:'',
+                    orderTime:'',
+                    textarea1:'',
+                    keepDays:''
+                },
+                groupForm:{
+                    groupName:'',
+                    contectName:'',
+                    tel:'',
+                    orderTime:'',
+                    textarea2:'',
+                    keepDays:''
+                },
+            //单击的行    
+                currentRow: null,
+            //选中的房间数
+                checkedNum: 0,
+                groupCheckedNum: 0,
+            //选中的房间数组
+                checkedRooms1:[],
+                checkedRooms2:[],
+            //房间总数据
+                roomsData1:[],
+                roomsData2:[],
+            //房间类型
+                type: [],
+            //房间状态
+                statetype: [{ text: '空闲',value: 'idle' },{ text: '使用中',value: 'used' },{ text: '不可用',value: 'invalid' }],
+            //初始激活的标签页  
+                activeName: 'first',
+                formLabelWidth: '100px',
+            //校对规则
+                rules1: {
+                    name:[ { validator: validateName, trigger: 'blur' } ],
+                    tel:[ { validator: validateTel, trigger: 'blur' } ],
+                    sex:[ { validator: validateSex, trigger: 'change' } ],
+                    orderTime:[ { validator: validateOrderTime, trigger: 'change' } ]
+                },
+                rules2:{
+                    groupName:[ { validator: validateGroupName, trigger: 'blur' } ],
+                    contectName:[ { validator: validateContectName, trigger: 'blur' } ],
+                    tel:[ { validator: validateTel, trigger: 'blur' } ],
+                    orderTime:[ { validator: validateOrderTime, trigger: 'change' } ]
+                },
+            //禁用当前日期之前的时间 
+                expireTimeOption: {
+                    disabledDate: time => {
+                        return time.getTime() < Date.now()-24*60*60*1000;
+                    }
+                }
+            };
+        },
+        methods: {
+        //切换页面
+            subpage1_2() {
+                return 'display:' + ( 
+                    sessionStorage.getItem("currentpage") == "1-2" ? "block":"none") ;
+            },
+        //获取数据
+            getdata() {
+                if(sessionStorage.getItem("currentpage") != "1-2"){return;}
+                var self = this;
+                axios.get('../server/page2info.php', {
+                    params: {
+                        username:sessionStorage.getItem("username")//发送用户名以 查询是否存在该用户 获得数据
+                    }
+                })
+                .then(function (response) {
+                    //console.log(response.data);
+                    let data=response.data;
+                    if(data.state=="OK"){
+                        console.log("get page1-2 data successfully!");
+                        //self.roomsData1=data.roomsData; 
+                        //self.roomsData2=data.roomsData;
+                        for (var i = data.roomsData.length - 1; i >= 0; i--) {
+                            self.roomsData1.push(data.roomsData[i]);
+                            self.roomsData2.push(data.roomsData[i]);
+                        }  
+                        for (var i = data.type.length - 1; i >= 0; i--) {
+                            self.type.push({text:data.type[i],value:data.type[i]});
+                        }
+                    }else{
+                        console.log('error: get page1-2 state != OK');
+                        vue.$message.error(data.state);
+                    }
+                })
+                .catch(function (error) {
+                    console.log(error);
+                    vue.$message.error('网络异常');
+                }) 
+            },
+        //根据预约时间显示可预约房间
+            showIdleRooms(formname){
+                var self = this;
+                var time1 = new Date(this.guestForm.orderTime);
+                var time2 = new Date(this.groupForm.orderTime);
+                if(formname=='guestForm' ? !this.guestForm.orderTime : !this.groupForm.orderTime){ return; }
+                //console.log(this.guestForm.orderTime);
+                //console.log(time1.UTCtoLOC());
+                axios.get('../server/showidlerooms.php', {
+                    params: formname=='guestForm' ? {
+                        username:sessionStorage.getItem("username"),
+                        orderTime:time1.UTCtoLOC(),
+                        keepDays:this.guestForm.keepDays
+                    }:{
+                        username:sessionStorage.getItem("username"),
+                        orderTime:time2.UTCtoLOC(),
+                        keepDays:this.groupForm.keepDays
+                    }
+                })
+                .then(function (response) {
+                    //console.log(response.data);
+                    let data=response.data;
+                    if(data.state=="OK"){
+                        console.log("show successfully!");
+                        vue.$message.success('已获取可预约房间');
+                        if( formname=='guestForm' ){ 
+                            self.roomsData1=data.roomsData; 
+                            self.checkedNum=0;
+                            //console.log(self.roomsData1);
+                        }else{ 
+                            self.roomsData2=data.roomsData;self.groupCheckedNum=0; 
+                        }
+                        self.type=[];
+                        for (var i = data.type.length - 1; i >= 0; i--) {
+                            self.type.push({text:data.type[i],value:data.type[i]});
+                        }
+                        self.checkedNum=0;               
+                    }else{
+                        console.log('error: show idle rooms state != OK');
+                        vue.$message.error(data.state);
+                    }
+                })
+                .catch(function (error) {
+                    console.log(error);
+                    vue.$message.error('网络异常');
+                })
+            },
+        //勾选Checkbox计数
+            handleSelect(selection, row){
+                //console.log(row);
+                //console.log(selection);
+                this.checkedNum=selection.length;
+                this.checkedRooms1=selection;
+            },
+            handleSelectAll(selection){
+                this.checkedNum=selection.length;
+            },
+            handleSelect2(selection, row){
+                //console.log(row);
+                //console.log(selection);
+                this.groupCheckedNum=selection.length;
+                this.checkedRooms2=selection;
+            },
+            handleSelectAll2(selection){
+                this.groupCheckedNum=selection.length;
+            },
+        //单击行函数
+            handleCurrentChange(val) {
+                this.currentRow = val;
+            },
+        //多选
+            handleSelectionChange(val) {
+                this.multipleSelection = val;
+            },
+        //过滤器函数
+            //清除过滤器和排序
+            clearFilter(formName) {
+                if(formName=='guestForm'){
+                    this.$refs.roomsData1.clearFilter();
+                    this.$refs.roomsData1.clearSort();
+                }
+                if(formName=='groupForm'){
+                    this.$refs.roomsData2.clearFilter();
+                    this.$refs.roomsData2.clearSort();
+                }
+            },
+            //房间类型过滤器
+            filterTag(value, row) {
+                return row.typename === value;
+            },
+            //房间状态过滤器
+            filterTag2(value, row) {
+                return row.state === value;
+            },
+        //按钮函数
+            //取消
+            CancelAll(){
+                this.guestForm={
+                    name:'',
+                    tel:'',
+                    sex:'',
+                    orderTime:'',
+                    textarea1:'',
+                    keepDays:''
+                };
+                this.checkedNum=0;
+                this.checkedRooms1=[];
+                this.$refs.roomsData1.clearSelection();
+            },
+            CancelAll2(){
+                this.groupForm={
+                    groupName:'',
+                    contectName:'',
+                    tel:'',
+                    orderTime:'',
+                    textarea2:'',
+                    keepDays:''
+                };
+                this.groupCheckedNum=0;
+                this.checkedRooms2=[];
+                this.$refs.roomsData2.clearSelection();
+            },
+        //提交函数
+            submitForm(formName){
+                //提取选中的房间号
+                if(formName=='guestForm'){
+                    var checkedRooms=this.checkedRooms1;
+                }else{
+                    var checkedRooms=this.checkedRooms2;
+                } 
+                //console.log(this.checkedRooms1);
+                if(checkedRooms.length==0) { vue.$message.warning('请至少选择一间房！'); return; }
+                var roomids = [];
+                for (var i = checkedRooms.length - 1; i >= 0; i--) {
+                    roomids.push(checkedRooms[i].roomid);
+                    console.log(roomids);
+                }
+                var self = this;
+                var time1 = new Date(this.guestForm.orderTime);
+                var time2 = new Date(this.groupForm.orderTime);
+                //console.log(this);
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        console.log('submit');
+                        axios.get('../server/order.php', {
+                            params: formName=='guestForm' ? {
+                                username:sessionStorage.getItem("username"),
+                                type:"guest",
+                                name:self.guestForm.name,
+                                tel:self.guestForm.tel,
+                                sex:self.guestForm.sex,
+                                orderTime:time1.UTCtoLOC(),
+                                keepDays:self.guestForm.keepDays,
+                                textarea:self.guestForm.textarea1,
+                                roomids:roomids
+                            }:{
+                                username:sessionStorage.getItem("username"),
+                                type:"group",
+                                groupName:self.groupForm.groupName,
+                                contectName:self.groupForm.contectName,
+                                tel:self.groupForm.tel,
+                                orderTime:time2.UTCtoLOC(),
+                                keepDays:self.groupForm.keepDays,
+                                groupCheckedNum:self.groupCheckedNum,
+                                textarea:self.guestForm.textarea2,
+                                roomids:roomids
+                            }
+                        })
+                        .then(function (response) {
+                            //console.log(response.data);
+                            let data=response.data;
+                            if(data.state=="OK"){
+                                console.log("change successfully!");
+                                vue.$message.success('操作成功');
+                                if(formName=='guestForm'){ 
+                                    self.checkedNum=0; 
+                                    self.guestForm={
+                                        name:'',
+                                        tel:'',
+                                        sex:'',
+                                        orderTime:'',
+                                        textarea1:'',
+                                        keepDays:''
+                                    }; 
+                                }else{ 
+                                    self.groupCheckedNum=0; 
+                                    self.groupForm={
+                                        groupName:'',
+                                        contectName:'',
+                                        tel:'',
+                                        orderTime:'',
+                                        textarea2:'',
+                                        keepDays:''
+                                    }; 
+                                }
+                                self.type=[];
+                                self.roomsData1=[];
+                                self.roomsData2=[];
+                                self.checkedRooms1=[];
+                                self.checkedRooms2=[];
+                                self.getdata();
+                                //self.dialogFormVisible = false;                    
+                            }else{
+                                console.log('error: change userinfo state != OK');
+                                vue.$message.error(data.state);
+                            }
+                        })
+                        .catch(function (error) {
+                            console.log(error);
+                            vue.$message.error('网络异常');
+                        })
+                    } else {
+                        console.log('error submit!!');//未通过表单数据规则验证
+                        return false;
+                    }
+                });
+            }
+        }
+    });
+</script>
+
+

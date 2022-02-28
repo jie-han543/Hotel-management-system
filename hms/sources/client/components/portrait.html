@@ -1,0 +1,51 @@
+<!--头像组件portrait-->
+<template id="avatar">
+    <div class="block" align="center" :key="Key">
+        <el-upload class="avatar-uploader"
+            :action=serverURL()
+            :show-file-list="false"
+            :on-success="handleAvatarSuccess"
+            :before-upload="beforeAvatarUpload"
+            :disabled="disabled">
+            <el-avatar :size="80" :src=usernameURL() id="userphoto"></el-avatar>
+        </el-upload>
+    </div>
+</template>
+<style>
+    .avatar-uploader .el-upload { cursor: pointer; overflow: hidden; }
+</style>
+<script>
+    Vue.component('portrait',{
+        props:['disabled'],
+        template:'#avatar',
+        data: function(){ return {Key:0} },
+        methods: {
+            usernameURL(){
+                if(sessionStorage.getItem("state")=="OK"){
+                    return "../pics/"+sessionStorage.getItem("username")+".png?t=" + Math.random();
+                }else{
+                    return "../pics/default.png";
+                }
+            },
+            serverURL(){
+                return "../server/uploadpic.php?username="+sessionStorage.getItem("username");
+            },
+            handleAvatarSuccess() {
+                this.$message.success('头像已修改！');
+                document.getElementById("userphoto").getElementsByTagName("img")[0].setAttribute("src", "../pics/" + sessionStorage.getItem("username")+".png?t=" + Math.random());
+                this.Key++;
+            },
+            beforeAvatarUpload(file) {
+                const isPNG = file.type === 'image/png';
+                const isLt2M = file.size / 1024 / 1024 < 2;
+                if (!isPNG) {
+                  this.$message.error('上传头像图片只能是 PNG 格式!');
+                }
+                if (!isLt2M) {
+                  this.$message.error('上传头像图片大小不能超过 2MB!');
+                }
+                return isPNG && isLt2M;
+            }
+        }
+    });
+</script>

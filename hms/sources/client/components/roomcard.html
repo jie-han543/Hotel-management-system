@@ -1,0 +1,167 @@
+<!--房间卡片组件roomcard-->
+<template id="roomcard">
+    <el-popover placement="bottom-start" width="500" trigger="click">     
+    <!--卡片主体-->
+        <div class="card" :style="color()" slot="reference" @click="GetCardData()">
+            <p class="room">
+                <span class="roomid">{{ info.roomid }}</span>
+                <span class="roominfo"><template>
+                    <el-tag size="mini" type="info" disable-transitions>
+                        {{ info.floor }}楼
+                    </el-tag>
+                    <el-tag size="mini" type="info" disable-transitions>
+                        {{ info.typename }}
+                    </el-tag>
+                </template></span>
+            </p>
+            <p class="guestname">
+                <span>{{ getGuestname() }}</span>
+                <span class="words">{{ showWords() }}</span>
+                
+            </p>
+            <div class="times">
+                <p class="time"><i class="el-icon-time"></i>预计离店：{{ info.leave_time }}</p>
+                <p class="time"><i class="el-icon-time"></i>下一预约：{{ info.order_time }}</p>
+            </div>
+        </div>     
+
+    <!--弹窗信息-->
+        <template>
+        <el-tabs type="card">
+            <div class="side">
+                <p class="subtitle">顾客信息</p>
+                <p class="subtext">客人姓名 : {{ details.guestname==''?details.ordername:details.guestname }}</p>
+                <p class="subtext">手机号码 : {{ details.tel }}</p>
+                <p class="subtext">性别 : {{ details.sex=='F'?'女':(details.sex=='M'?'男':'') }}</p>
+                <p class="subtext">年龄 : {{ details.age }}</p>
+                <p class="subtext"><i class="el-icon-time"></i>入住时间 : {{ details.checkin_time }}</p>
+                <p class="subtext"><i class="el-icon-alarm-clock"></i>预离时间 : {{ details.checkout_time }}</p>
+                <p class="subtext">
+                    <!--span>押金缴纳: {{  }}</span-->
+                </p>
+            </div>
+            <el-divider></el-divider>
+            <div class="side">
+                <p class="subtitle">房间信息</p>
+                <p class="subtext">房间状态 : {{ details.status=='used'?'使用中':(details.status=='idle'?'空闲':'不可用') }}</p>
+                <p class="subtext">房间类型 : {{ details.typename }}</p>
+                <p class="subtext">当前房价 : {{ details.price }}</p>
+                <p class="subtext">楼层 : {{ details.floor }}楼</p>
+                <p class="subtext">床数 : {{ details.bedsnum }}张</p>
+                <p class="subtext">描述 : {{ details.description }}</p>
+                <p class="subtext">&nbsp;</p>               
+            </div>   
+        </el-tabs>
+        </template> 
+    </el-popover>
+</template>
+
+<style>
+    .card { margin: 8px; border-radius: 4px; padding: 15px; height: 105px; width: 185px; color: #fff; float: left; }
+    .room { margin: 0; }
+    .roomid { font-weight: 600; font-size: large;     padding-right: 10px; }
+    .roominfo { margin-bottom: 2px; }
+    .guestname { margin: 10px 10px 10px 0; }
+    .time { margin: 5px 0; font-size: small; }
+    .time i { margin-right: 5px; }
+    .words { color: #DCDFE6; font-size: small; }
+    .el-divider { margin: 15px 0; }
+    .side { margin-left: 15px; }
+    .subtitle { font-weight: 600; margin: 5px 0; }
+    .subtext { margin: 0 10px; }
+    .subtext i { margin-right: 5px; }
+    .el-calendar-table .el-calendar-day { height: 60px; }
+</style>
+
+<script>
+    Vue.component('roomcard',{
+        template:'#roomcard',
+        props:[ 'info' ],
+        data(){ return {
+            today: new Date(),//获取今日日期
+            comesoon:false,//今日是否有预抵客户
+            details: ''
+        }},
+        methods: {
+        //卡片背景色
+            color(){
+                var color='';
+                //console.log(this.info.status);
+                if(this.info.status=='used'){ color='#E6A23C'; }
+                if(this.info.status=='invalid'){ color='#F56C6C'; }
+                if(this.info.status=='idle'){ 
+                    color='#67C23A';
+                    if(this.info.ordername!='' && this.info.order_time==this.DateToStr(this.today)){ 
+                        this.comesoon=true;
+                        color='#409EFF'; 
+                    } 
+                }
+                return "background-color: "+color+";";
+            },
+            getGuestname(){
+                if(this.info.guestname!=''){ return this.info.guestname; }
+                if(this.info.ordername!='' && this.comesoon){
+                    return this.info.ordername;
+                }
+                return '';                    
+            },
+            showWords(){
+                var words='';
+                if(this.info.status=='used'){ words='在住'; }
+                if(this.info.status=='invalid'){ words='不可用'; }
+                if(this.info.status=='idle'){ 
+                    words='今日空闲';
+                    if(this.comesoon==true){ words='今日预抵'; } 
+                }
+                return words;
+            },
+            GetCardData(){
+                //console.log('进入了get card data函数');
+                var self = this;
+                axios.get('../server/roomcardinfo.php', {
+                    params: {
+                        username:sessionStorage.getItem("username"),//发送用户名以 查询是否存在该用户 获得数据
+                        roomid:self.info.roomid
+                    }
+                })
+                .then(function (response) {
+                    //console.log(response.data);
+                    let data=response.data;
+                    if(data.state=="OK"){
+                        console.log("get roomcard data successfully!");
+                        self.details=data.details; 
+                        self.info.floor=self.details.floor;
+                        self.info.typename=self.details.typename;
+                        self.info.status=self.details.status;
+                        self.info.guestid=self.details.guestid;
+                        self.info.guestname=self.details.guestname;
+                        self.info.leave_time=self.details.leave_time;
+                        self.info.ordernameid=self.details.ordernameid;
+                        self.info.ordername=self.details.ordername;
+                        self.info.order_time=self.details.order_time;
+                    }else{
+                        console.log('error: get roomcard data state != OK');
+                        vue.$message.error(data.state);
+                    }
+                })
+                .catch(function (error) {
+                    console.log(error);
+                    vue.$message.error('网络异常');
+                }) 
+            },
+            DateToStr(date){
+                var year = date.getFullYear();
+                var month =(date.getMonth() + 1).toString();
+                var day = (date.getDate()).toString();
+                if (month.length == 1) {
+                    month = "0" + month;
+                }
+                if (day.length == 1) {
+                    day = "0" + day;
+                }
+                dateTime = year +"-"+ month +"-"+  day;
+                return dateTime;
+            }
+        }
+    });
+</script>

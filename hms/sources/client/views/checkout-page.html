@@ -1,0 +1,456 @@
+<template id="checkout-page">
+    <el-tabs v-model="activeName" type="border-card" :style=subpage1_4()>
+    <!--标签页1-散客退房-->
+        <el-tab-pane label="散客退房" name=first>
+            <el-table :data="guestCheckIn" highlight-current-row @current-change="handleCurrentChange2" ref="guestCheckIn" height="600">
+                <el-table-column prop="CheckInid" sortable label="入住单号" width="210" align="center"></el-table-column>
+                <el-table-column prop="name" sortable label="姓名" width="110" align="center"></el-table-column>
+                <el-table-column prop="tel" label="电话" width="170" align="center"></el-table-column>
+                <el-table-column prop="IDnumber" label="身份证号" width="210" align="center"></el-table-column>
+                <el-table-column prop="roomid" sortable label="入住房号" width="130" align="center"></el-table-column>
+                <el-table-column prop="time" label="入住日期" width="160" align="center"></el-table-column>
+                <el-table-column prop="predictdays" sortable label="预住天数" align="center"></el-table-column>
+                <el-table-column prop="keepdays" sortable label="已住天数" align="center"></el-table-column>
+                <el-table-column prop="price" sortable label="单价" align="center"></el-table-column>
+            </el-table>
+            <div class="CheckOutButton">
+                <span id="note">注：单击选择要退房的行</span>
+                <el-button @click="CancelAll2">取消</el-button>
+                <el-button type="primary" @click="checkOut()">退房结账</el-button>
+            </div>
+
+        <!--结账弹出框2-->
+            <el-dialog width="30%" title="结账退房" :visible.sync="dialogFormVisible3" :close-on-click-modal=false>
+                <el-form ref="guestForm" :rules="rules2" :model="guestForm" label-width="120px" class="demo-ruleForm" >
+                    <el-form-item label="房号">
+                        <p class="groupItem">{{ guestForm.roomid }}</p>
+                    </el-form-item>
+                    <el-form-item label="总价">
+                        <p class="groupItem">{{ guestForm.price }}&nbsp;元</p>
+                    </el-form-item>
+                    <el-form-item label="支付方式" prop="payment">
+                        <el-select v-model="guestForm.payment" placeholder="请选择支付方式" style="width: 200px;">
+                          <el-option label="现金" value="Cash"></el-option>
+                          <el-option label="银行卡" value="Card"></el-option>
+                          <el-option label="网络支付" value="Online"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-form>
+                <div slot="footer" class="dialog-footer">
+                    <el-button @click="dialogFormVisible3 = false;">返回</el-button>
+                    <el-button type="primary" @click="SubmitGuestCheckOut()">确认</el-button>
+                </div>
+            </el-dialog>
+
+        </el-tab-pane>
+
+
+    <!--标签页2-团体退房-->
+        <el-tab-pane label="团体退房" name=second>
+            <el-row>
+                <el-col :span="9">
+                    <el-input placeholder="搜索入住团体订单" v-model="input" class="input-with-select searchtype">
+                        <el-select v-model="select" slot="prepend" placeholder="字段类型">
+                            <el-option label="联系电话" value="1"></el-option>
+                            <el-option label="联系人" value="2"></el-option>
+                            <el-option label="团队名" value="3"></el-option>
+                        </el-select>
+                        <el-button slot="append" icon="el-icon-search" @click="searchOrder()"></el-button>
+                    </el-input>
+                    <el-form ref="groupForm" :model="groupForm" label-width="120px" class="demo-ruleForm groupForm" >
+                        <el-form-item label="团队名">
+                            <p class="groupItem">{{ groupForm.groupName }}</p>
+                        </el-form-item>
+                        <el-form-item label="联系人">
+                            <p class="groupItem">{{ groupForm.name }}</p>
+                        </el-form-item>
+                        <el-form-item label="联系电话">
+                            <p class="groupItem">{{ groupForm.tel }}</p>
+                        </el-form-item>
+                        <el-form-item label="入住日期">
+                            <p class="groupItem">{{ groupForm.time }}</p> 
+                        </el-form-item>
+                        <el-form-item label="预住天数">
+                            <p class="groupItem">{{ groupForm.predictdays }}&nbsp;天</p> 
+                        </el-form-item>
+                        <el-form-item label="实住天数">
+                            <p class="groupItem">{{ groupForm.keepdays }}&nbsp;天</p> 
+                        </el-form-item>
+                        <el-form-item label="入住房数">
+                            <p class="groupItem">{{ groupForm.membersnum }}&nbsp;间</p>
+                        </el-form-item>
+                    </el-form>
+                    <div class="CheckOutButton2">
+                        <el-button @click="CancelAll()">清空</el-button>
+                        <el-button type="primary" @click="showprice(); dialogFormVisible2 = true;">结账退房</el-button>
+                    </div>
+
+                </el-col>
+                <el-col :span="15">
+                    <el-table :data="guests" ref="guests" height="650">
+                        <el-table-column prop="CheckInid" label="单号" width="200" align="center"></el-table-column>
+                        <el-table-column prop="name" label="姓名" width="100" align="center"></el-table-column>
+                        <el-table-column prop="tel" label="电话" width="120" align="center"></el-table-column>
+                        <el-table-column prop="IDnumber" sortable label="身份证号" width="200" align="center"></el-table-column>
+                        <el-table-column prop="price" sortable label="单价" width="100" align="center"></el-table-column>
+                        <el-table-column prop="roomid" sortable label="房间号" align="center"></el-table-column>
+                    </el-table>
+                </el-col>
+            </el-row>
+        </el-tab-pane>
+
+        <!--搜索入住弹出框-->
+            <el-dialog width="50%" title="搜索团体入住信息结果" :visible.sync="dialogFormVisible" :close-on-click-modal=false>
+                <el-table :data="groupCheckIn" highlight-current-row @current-change="handleCurrentChange" ref="groupCheckIn">
+                    <el-table-column prop="groupName" label="团队名" width="160" align="center"></el-table-column>
+                    <el-table-column prop="name" label="联系人" width="140" align="center"></el-table-column>
+                    <el-table-column prop="tel" label="联系电话" width="140" align="center"></el-table-column>
+                    <el-table-column prop="membersnum" sortable label="入住房数" width="120" align="center"></el-table-column>
+                    <el-table-column prop="time" sortable label="入住日期" width="130" align="center"></el-table-column>
+                    <el-table-column prop="predictdays" sortable label="预住天数" align="center"></el-table-column>
+                </el-table>
+                <div slot="footer" class="dialog-footer">
+                    <span id="note">注：单击行选择团队</span>
+                    <el-button @click="dialogFormVisible = false; CancelAll();">取消</el-button>
+                    <el-button type="primary" @click="dialogFormVisible = false;">确认</el-button>
+                </div>
+            </el-dialog>
+        <!--结账弹出框-->
+            <el-dialog width="30%" title="结账退房" :visible.sync="dialogFormVisible2" :close-on-click-modal=false>
+                <el-form ref="groupForm" :rules="rules" :model="groupForm" label-width="120px" class="demo-ruleForm" >
+                    <el-form-item label="总价">
+                        <p class="groupItem">{{ groupForm.price }}&nbsp;元</p>
+                    </el-form-item>
+                    <el-form-item label="支付方式" prop="payment">
+                        <el-select v-model="groupForm.payment" placeholder="请选择支付方式" style="width: 200px;">
+                          <el-option label="现金" value="Cash"></el-option>
+                          <el-option label="银行卡" value="Card"></el-option>
+                          <el-option label="网络支付" value="Online"></el-option>
+                        </el-select>
+                    </el-form-item>
+                </el-form>
+                <div slot="footer" class="dialog-footer">
+                    <el-button @click="dialogFormVisible2 = false;">返回</el-button>
+                    <el-button type="primary" @click="SubmitGroupCheckOut()">确认</el-button>
+                </div>
+            </el-dialog>
+        
+
+    </el-tabs>
+</template>
+<style>
+    .groupItem { margin: 0; }
+    .CheckOutButton { text-align: right; margin-top: 20px; margin-right: 100px; }
+    .CheckOutButton2 { text-align: center; margin-top: 60px; }
+    .groupForm { margin-left: 50px; }
+</style>
+<script>
+    Vue.component('checkout-page', {
+        template:'#checkout-page',
+        //打开/刷新时获取数据
+        beforeMount: function () {
+            if(sessionStorage.getItem("username") != null){
+                this.getdata();
+            }
+        },
+        data(){ 
+            var validate = (rule, value, callback) =>{
+                if (value === '') {
+                    callback(new Error('支付方式不能为空'));
+                }
+                callback();
+            }; 
+        //数据
+            return{
+            //初始激活的标签页  
+                activeName: 'first',
+            //搜索弹窗
+                dialogFormVisible:false,
+                dialogFormVisible2:false,
+                dialogFormVisible3:false,
+            //搜索内容
+                input:'',
+            //搜索结果
+                groupCheckIn:[],
+            //搜索类别
+                select:'1',
+            //在住散客信息
+                guestCheckIn:[],
+            //散客表单
+                guestForm:{
+                    CheckInid:'',
+                    name:'',
+                    IDnumber:'',
+                    roomid:'',
+                    time:'',
+                    predictdays:'',
+                    keepdays:'',
+                    price:0.00,
+                    payment:''
+                },
+            //团队表单
+                groupForm:{
+                    groupid:'',
+                    groupName:'',
+                    name:'',
+                    tel:'',
+                    time:'',
+                    predictdays:'',
+                    keepdays:'',
+                    membersnum:'',
+                    price:0.00,
+                    payment:''
+                },
+            //团队成员
+                guests:[],
+            //校验规则
+                rules: {
+                    payment:[ { validator: validate, trigger: 'change' } ]
+                },
+                rules2: {
+                    payment:[ { validator: validate, trigger: 'change' } ]
+                }
+            }
+        },
+        methods: {
+        //切换页面
+            subpage1_4() {
+                return 'display:' + ( 
+                    sessionStorage.getItem("currentpage") == "1-4" ? "block":"none") ;
+            },
+        //获取数据
+            getdata() {
+                if(sessionStorage.getItem("currentpage") != "1-4"){return;}
+                var self=this;
+                axios.get('../server/checkinguest.php', {
+                    params: {
+                        username:sessionStorage.getItem("username"),
+                    }
+                })
+                .then(function (response) {
+                    if(typeof(response.data)=='string'){
+                        data=eval('('+response.data+')');
+                    }else{
+                        data=response.data;
+                    }
+                    if(data.state=="OK"){
+                        console.log("show CheckIn guests successfully!");
+                        self.guestCheckIn=data.guestCheckIn;
+
+                    }else{
+                        console.log('error: show CheckIn guests state != OK');
+                        vue.$message.error(data.state);
+                    }
+                })
+                .catch(function (error) {
+                    console.log(error);
+                    vue.$message.error('网络异常');
+                })
+            },
+        //搜索
+            searchOrder(){
+                var self=this;
+                axios.get('../server/searchcheckin.php', {
+                    params: self.select=='1' ? {
+                        username:sessionStorage.getItem("username"),
+                        tel:self.input
+                    }:(self.select=='2' ? {
+                        username:sessionStorage.getItem("username"),
+                        contectName:self.input
+                    }:{
+                        username:sessionStorage.getItem("username"),
+                        groupName:self.input
+                    })
+                })
+                .then(function (response) {
+                    //console.log(response.data);
+                    if(typeof(response.data)=='string'){
+                        data=eval('('+response.data+')');
+                    }else{
+                        data=response.data;
+                    }
+                    //console.log(typeof(data));
+                    if(data.state=="OK"){
+                        console.log("show searchCheckIn successfully!");
+                        self.groupCheckIn=data.CheckInData;
+                    }else{
+                        console.log('error: show searchCheckIn state != OK');
+                        vue.$message.error(data.state);
+                    }
+                })
+                .catch(function (error) {
+                    console.log(error);
+                    vue.$message.error('网络异常');
+                })
+                this.dialogFormVisible=true; 
+            },
+        //单击行函数
+            handleCurrentChange(val) { 
+                if(val === null){ return; }
+                Object.assign(this.groupForm,val);
+                var self=this;
+                axios.get('../server/checkin_groupmembers.php', {
+                    params: {
+                        username:sessionStorage.getItem("username"),
+                        groupid:self.groupForm.groupid
+                    }
+                })
+                .then(function (response) {
+                    //console.log(response.data);
+                    if(typeof(response.data)=='string'){
+                        data=eval('('+response.data+')');
+                    }else{
+                        data=response.data;
+                    }
+                    //console.log(typeof(data));
+                    if(data.state=="OK"){
+                        console.log("show CheckIn group members successfully!");
+                        self.guests=data.guests;
+                    }else{
+                        console.log('error: show CheckIn group members state != OK');
+                        vue.$message.error(data.state);
+                    }
+                })
+                .catch(function (error) {
+                    console.log(error);
+                    vue.$message.error('网络异常');
+                })
+            },
+            handleCurrentChange2(val){
+                if(val === null){ return; }
+                this.guestForm.CheckInid=val.CheckInid;
+                this.guestForm.name=val.name;
+                this.guestForm.IDnumber=val.IDnumber;
+                this.guestForm.roomid=val.roomid;
+                this.guestForm.time=val.time;
+                this.guestForm.predictdays=val.predictdays;
+                this.guestForm.keepdays=val.keepdays;
+                this.guestForm.price=val.price*this.guestForm.keepdays;
+            },
+        //显示价格
+            showprice(){
+                var i=0;
+                this.groupForm.price=0.00;
+                while(this.guests[i]){
+                    this.groupForm.price+=this.guests[i].price*this.groupForm.keepdays;
+                    i++;
+                }
+            },
+        //取消
+            CancelAll(){
+                this.groupCheckIn=[];
+                this.input='';
+                this.groupForm={
+                    groupid:'',
+                    groupName:'',
+                    name:'',
+                    tel:'',
+                    time:'',
+                    predictdays:'',
+                    keepdays:'',
+                    membersnum:'',
+                    price:0.00,
+                    payment:''
+                };
+                this.guests=[];
+            },
+            CancelAll2(){
+                this.guestForm={
+                    CheckInid:'',
+                    name:'',
+                    IDnumber:'',
+                    roomid:'',
+                    time:'',
+                    predictdays:'',
+                    price:0.00,
+                    payment:''
+                };
+                this.$refs.guestCheckIn.setCurrentRow();
+            },
+        //打开提交弹窗
+            checkOut(){
+                if(this.guestForm.CheckInid!=''){
+                    this.dialogFormVisible3 = true;
+                }else{
+                    vue.$message.warning("请单击选择要进行退房操作的订单");
+                }
+            },
+        //提交顾客退房
+            SubmitGuestCheckOut(){
+                this.$refs["guestForm"].validate((valid) => {
+                    if (valid) {
+                        var self=this;
+                        axios.get('../server/checkout.php', {
+                            params: {
+                                username:sessionStorage.getItem("username"),
+                                CheckInid:self.guestForm.CheckInid,
+                                price:self.guestForm.price,
+                                payment:self.guestForm.payment,
+                                keepdays:self.guestForm.keepdays
+                            }
+                        })
+                        .then(function (response) {
+                            if(typeof(response.data)=='string'){
+                                data=eval('('+response.data+')');
+                            }else{
+                                data=response.data;
+                            }
+                            if(data.state=="OK"){
+                                vue.$message.success('退房成功');
+                                console.log("checkout guest successfully!");
+                                self.CancelAll2();
+                                self.guestCheckIn=[];
+                                self.getdata();
+                            }else{
+                                console.log('error: checkout guest state != OK');
+                                vue.$message.error(data.state);
+                            }
+                        })
+                        .catch(function (error) {
+                            console.log(error);
+                            vue.$message.error('网络异常');
+                        })
+                        this.dialogFormVisible3 = false;
+                    }
+                })
+            },
+            SubmitGroupCheckOut(){
+                this.$refs["groupForm"].validate((valid) => {
+                    if (valid) {
+                        var self=this;
+                        axios.get('../server/checkout2.php', {
+                            params: {
+                                username:sessionStorage.getItem("username"),
+                                groupid:self.groupForm.groupid,
+                                keepdays:self.groupForm.keepdays,
+                                price:self.groupForm.price,
+                                payment:self.groupForm.payment
+                            }
+                        })
+                        .then(function (response) {
+                            if(typeof(response.data)=='string'){
+                                data=eval('('+response.data+')');
+                            }else{
+                                data=response.data;
+                            }
+                            if(data.state=="OK"){
+                                vue.$message.success('退房成功');
+                                console.log("checkout group successfully!");
+                                self.CancelAll();
+                            }else{
+                                console.log('error: checkout group state != OK');
+                                vue.$message.error(data.state);
+                            }
+                        })
+                        .catch(function (error) {
+                            console.log(error);
+                            vue.$message.error('网络异常');
+                        })
+
+                        this.dialogFormVisible2 = false;
+                    }
+                })
+            }
+        }
+    });
+</script>

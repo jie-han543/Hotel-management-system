@@ -1,0 +1,117 @@
+<template id="view-page">
+    <div type="border-card" :style=subpage1_1()>
+        <template>
+            <el-row>
+                <el-col :span=1>
+                    <el-checkbox :indeterminate="isIndeterminate" v-model="checkAll" @change="handleCheckAllChange" class="checkedbox">全选</el-checkbox>
+                </el-col>
+                <el-col :span=5>
+                    <el-checkbox-group v-model="checked" @change="handleCheckedChange" class="checkedbox" id="checkedbox">
+                        <el-checkbox v-for="item in status" :label="item" :key="item">{{item}}</el-checkbox>
+                    </el-checkbox-group>
+                </el-col>
+                <el-col :span=18>
+                    <el-select v-model="value" multiple placeholder="请选择房间类型"  class="selectlist">
+                        <el-option v-for="item in type" :key="item" :label="item" :value="item" style="width: 100%"></el-option>
+                    </el-select>
+                </el-col>
+            </el-row>
+        </template>
+        <div v-for="item in infos" :style=showcard(item)>
+            <roomcard :info="item"></roomcard>
+        </div>
+    </div>
+</template>
+
+<style>
+    .checkedbox { margin-top: 10px; }
+    #checkedbox { margin-left: 20px; }
+    .selectlist input { width: 550px; }
+    /*.selectlist .el-input__suffix { right: -430px; }*/
+</style>
+
+<script>
+    const Options = ['空闲', '在住', '不可用'];
+    Vue.component('view-page', {
+        template:'#view-page',
+        //打开/刷新时获取数据
+        beforeMount: function () {
+            if(sessionStorage.getItem("username") != null){
+                this.getdata();
+            }
+        },
+        //数据
+        data(){
+            return{
+            //后端返回数据
+                infos:[],
+                checkAll: false,//是否全选
+                checked: ['空闲', '在住'],//当前选中的状态
+                status: Options,//全部状态
+                isIndeterminate: true,//是否中间态
+                type: [],
+                value: []//当前选中的房间类型
+            }
+        },
+        methods: {
+        //切换页面
+            subpage1_1() {
+                return 'display:' + ( 
+                    sessionStorage.getItem("currentpage") == "1-1" ? "block":"none") ;
+            },
+        //显示卡片
+            showcard(item){
+                var dispaly=false;
+                if(item.status=='used' && this.checked.inArray('在住') ){
+                    dispaly=true;
+                }
+                if(item.status=='idle' && this.checked.inArray('空闲') ){
+                    dispaly=true;
+                }
+                if(item.status=='invalid' && this.checked.inArray('不可用') ){
+                    dispaly=true;
+                }
+                if(( this.value.inArray(item.typename) || this.value=='' ) && dispaly==true){ return 'display: block'; }
+                return 'display: none';
+            },
+        //判断是否中间态
+            handleCheckAllChange(val) {
+                this.checked = val ? Options : [];
+                this.isIndeterminate = false;
+            },
+        //判断是否全选
+            handleCheckedChange(value) {
+                let checkedCount = value.length;
+                this.checkAll = checkedCount === this.status.length;
+                this.isIndeterminate = checkedCount > 0 && checkedCount < this.status.length;
+            },
+        //获取数据
+            getdata() {
+                if(sessionStorage.getItem("currentpage") != "1-1"){return;}
+                var self = this;
+                axios.get('../server/page1info.php', {
+                    params: {
+                        username:sessionStorage.getItem("username"),//发送用户名以 查询是否存在该用户 获得数据
+                    }
+                })
+                .then(function (response) {
+                    //console.log(response.data);
+                    let data=response.data;
+                    if(data.state=="OK"){
+                        console.log("get page1-1 data successfully!");
+                        self.infos=data.infos; 
+                        self.type=data.type;
+                    }else{
+                        console.log('error: get page1-1 state != OK');
+                        vue.$message.error(data.state);
+                    }
+                })
+                .catch(function (error) {
+                    console.log(error);
+                    vue.$message.error('网络异常');
+                }) 
+            }
+        }
+    });
+</script>
+

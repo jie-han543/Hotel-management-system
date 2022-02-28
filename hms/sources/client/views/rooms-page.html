@@ -1,0 +1,505 @@
+<template id="rooms-page">
+    <el-tabs v-model="activeName" type="border-card" :style=subpage2()>
+        <el-tab-pane label="房间类型" name="first">
+            <el-table :data="roomsTypeData" style="width: 100%" highlight-current-row @current-change="handleCurrentChange" ref="roomsTypeData">
+                <el-table-column prop="typename" label="房间类型" width="140"></el-table-column>
+                <el-table-column prop="bedsnum" sortable label="床数" width="80" align="center"></el-table-column>
+                <el-table-column prop="price" sortable label="默认价格" width="120" align="center"></el-table-column>
+                <el-table-column prop="description" label="描述" ></el-table-column>
+                <el-table-column label="操作" width="160" align="center">
+                    <template slot="header" slot-scope="scope">
+                        <el-button size="mini" type="primary" style="width: 125px" plain @click="addtype('roomtype')">增加</el-button>
+                    </template>
+                    <template slot-scope="scope">
+                        <el-button size="mini" type="success" plain @click="handleEdit(scope.$index, scope.row,'roomtype')">编辑</el-button>
+                        <el-button size="mini" type="danger" plain @click="handleDelete(scope.$index, scope.row,'roomtype')">删除</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </el-tab-pane>
+
+        <el-tab-pane label="房间信息" name="second">
+            <el-table :data="roomsData" style="width: 100%" highlight-current-row @current-change="handleCurrentChange" ref="roomsData">
+
+                <el-table-column prop="roomid" sortable label="房间号" width="100"></el-table-column>
+                <el-table-column prop="floor" sortable label="楼层" width="80" align="center"></el-table-column>
+                <el-table-column prop="state" label="状态" width="80" align="center"
+                    :filters=statetype
+                    :filter-method="filterTag2"
+                    filter-placement="bottom-end">
+                    <template slot-scope="scope">
+                        <el-tag size="mini" :type="scope.row.state === 'idle' ? 'success' : (scope.row.state === 'used' ? 'warning' : 'danger')" disable-transitions>{{scope.row.state === 'idle' ? '空闲' : (scope.row.state === 'used' ? '使用中' : '不可用')}}</el-tag>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="price" sortable label="价格" width="100" align="center"></el-table-column>
+                <el-table-column prop="typename" label="房间类型" width="100"
+                    :filters=type
+                    :filter-method="filterTag"
+                    filter-placement="bottom-end">
+                    <template slot-scope="scope">
+                        <el-tag size="mini" type="primary" disable-transitions>{{scope.row.typename}}</el-tag>
+                    </template>
+                </el-table-column>
+                <el-table-column prop="description" label="描述" ></el-table-column>
+                <el-table-column label="操作" width="210" align="right">
+                    <template slot="header" slot-scope="scope">
+                        <el-button size="mini" type="info" plain @click="clearFilter">重置</el-button>
+                        <el-button size="mini" type="primary" plain @click="addtype('room')">增加</el-button>
+                    </template>
+                    <template slot-scope="scope">
+                        <el-button size="mini" type="success" plain @click="handleEdit(scope.$index, scope.row,'room')">编辑</el-button>
+                        <el-button size="mini" type="danger" plain @click="handleDelete(scope.$index, scope.row,'room')">删除</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </el-tab-pane>
+    
+
+    <!--房间类型弹窗-->
+        <el-dialog width="35%" title="房间类型" :visible.sync="dialogFormVisible" :close-on-click-modal=false :before-close="handleClose1">
+            <el-form :model="roomtype" :rules="rules1" ref="roomtype" class="demo-ruleForm" label-position="left" status-icon>
+                <el-form-item label="类型名" :label-width="formLabelWidth" prop="typename">
+                    <el-input v-model="roomtype.typename" autocomplete="off"></el-input>
+                </el-form-item>
+                <el-form-item label="床数" :label-width="formLabelWidth" prop="bedsnum">
+                    <el-input-number v-model="roomtype.bedsnum" autocomplete="off" :step="1" :min="1" :max="10" step-strictly></el-input-number>
+                </el-form-item>
+                <el-form-item label="默认价格" :label-width="formLabelWidth" prop="price">
+                    <el-input-number  v-model="roomtype.price" autocomplete="off" :precision="2" :step="20" :min="0"></el-input-number>
+                </el-form-item>
+                <el-form-item label="描述" :label-width="formLabelWidth" prop="description">
+                    <el-input type="textarea" v-model="roomtype.description" autocomplete="off" maxlength="200" show-word-limit :autosize="{ minRows: 3}"></el-input>
+                </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click="dialogFormVisible = false; resetForm('roomtype')">取消</el-button>
+                <el-button @click="resetForm('roomtype')">清空</el-button>
+                <el-button type="primary" @click="submitForm('roomtype')">保存</el-button>
+            </div>
+        </el-dialog>
+
+
+    <!--房间详细信息弹窗-->
+        <el-dialog width="35%" title="房间信息" :visible.sync="dialogFormVisible2" :close-on-click-modal=false :before-close="handleClose2">
+            <el-form :model="room" :rules="rules2" ref="room" class="demo-ruleForm" label-position="left" status-icon>
+                <el-form-item label="房间类型" :label-width="formLabelWidth" prop="typename">
+                    <el-select v-model="room.typename" @change="fillfrom">
+                        <el-option v-for="item in type" :label="getroomtype(item)" :value="getroomtype(item)"></el-option>
+                    </el-select>
+                </el-form-item>
+                <el-form-item label="房间号" :label-width="formLabelWidth" prop="roomid">
+                    <el-input v-model="room.roomid" autocomplete="off"></el-input>
+                </el-form-item>
+                <el-form-item label="楼层" :label-width="formLabelWidth" prop="floor">
+                    <el-input-number v-model="room.floor" autocomplete="off" :step="1" step-strictly></el-input-number>
+                </el-form-item>
+                <el-form-item label="房间状态" :label-width="formLabelWidth" prop="state">
+                    <el-radio-group v-model="room.state" >
+                        <el-radio label="idle" :disabled=disablestate1()>空闲</el-radio>
+                        <el-radio label="used" :disabled="true">使用中</el-radio>
+                        <el-radio label="invalid" :disabled=disablestate3()>不可用</el-radio>
+                    </el-radio-group>
+                </el-form-item>
+                <el-form-item label="价格" :label-width="formLabelWidth" prop="price">
+                    <el-input-number  v-model="room.price" autocomplete="off" :precision="2" :step="20" :min="0"></el-input-number>
+                </el-form-item>
+                <el-form-item label="描述" :label-width="formLabelWidth" prop="description">
+                    <el-input type="textarea" v-model="room.description" autocomplete="off" maxlength="200" show-word-limit :autosize="{ minRows: 3}"></el-input>
+                </el-form-item>
+            </el-form>
+            <div slot="footer" class="dialog-footer">
+                <el-button @click="dialogFormVisible2 = false; resetForm('room')">取消</el-button>
+                <el-button @click="resetForm('room')">清空</el-button>
+                <el-button type="primary" @click="submitForm('room')">保存</el-button>
+            </div>
+        </el-dialog>
+
+
+    </el-tabs>
+</template>
+
+<style>
+    .el-table table td { padding: 5px 0; }
+    .el-table table tbody td { padding: 5px 0; }
+    .el-dropdown-link { cursor: pointer; }
+    .el-textarea .el-input__count { background: rgba(255,255,255,0); height: 25px; }
+</style>
+
+<script>
+    Vue.component('rooms-page', {
+        template:'#rooms-page',
+        //打开/刷新时获取数据
+        beforeMount: function () {
+            if((sessionStorage.getItem("permissions") & 1) != 0){
+                this.getdata();
+            }
+        },
+        data() {
+        //弹窗校对规则函数
+            var validateTypename = (rule, value, callback) =>{
+                if (value === '') {
+                    callback(new Error('类型名不能为空'));
+                }else if(value.trim().length > 20) {
+                    callback(new Error('类型名不能超过20个字符'));
+                }
+                callback();
+            };
+            var validateRoomid = (rule, value, callback) =>{
+                if (value === '') {
+                    callback(new Error('房间号不能为空'));
+                }else if(value.trim().length > 8) {
+                    callback(new Error('房间号不能超过8个字符'));
+                }
+                callback();
+            };
+            var validateFloor = (rule, value, callback) =>{
+                if (value === 0) {
+                    callback(new Error('楼层不能为0'));
+                }
+                callback();
+            };
+            var validateState = (rule, value, callback) =>{
+                if (value === '') {
+                    callback(new Error('房间状态不能为空'));
+                }
+                callback();
+            };
+            var validateTypename2 = (rule, value, callback) =>{
+                if (value === '') {
+                    callback(new Error('请选择房间类型'));
+                }
+                callback();
+            };
+        //数据
+            return {
+            //后端返回全部数据
+                roomData:{state:'',roomtypes:[],rooms:[]},
+            //房间类型和详细房间总数据
+                roomsTypeData:[],
+                roomsData:[],
+            //房间类型
+                type: [],
+            //房间状态
+                statetype: [{ text: '空闲',value: 'idle' },{ text: '使用中',value: 'used' },{ text: '不可用',value: 'invalid' }],
+            //打开的弹窗数据
+                roomtype:{
+                    typeid:'',
+                    typename:'',
+                    bedsnum:'',
+                    price:'',
+                    description:''
+                },
+                room:{
+                    roomid:'',
+                    floor:'',
+                    state:'',
+                    price:'',
+                    description:'',
+                    typename:'',
+                    roomtypeid:''
+                },
+            //校对规则    
+                rules1: {
+                    typename:[ { validator: validateTypename, trigger: 'blur' } ]                    
+                },
+                rules2: {
+                    roomid:[ { validator: validateRoomid, trigger: 'blur' } ],
+                    floor:[ { validator: validateFloor, trigger: 'change' } ],
+                    state:[ { validator: validateState, trigger: 'change' } ],
+                    typename:[ { validator: validateTypename2, trigger: 'change' } ]
+                },
+            //按钮操作名    
+                op:'',
+            //原状态
+                oldstate:'',
+            //修改的原房间号    
+                oldroomid:'',
+            //单击的行    
+                currentRow: null,
+            //初始激活的表格  
+                activeName: 'first',
+            //弹窗可见设置    
+                dialogFormVisible: false,
+                dialogFormVisible2: false,
+            //弹窗元素宽度    
+                formLabelWidth: '100px'
+            }
+        },
+        methods: {
+        //切换页面
+            subpage2() { 
+                var allow = ((sessionStorage.getItem("permissions") & 1) != 0);
+                //if(allow){ this.getdata(); }
+                return 'display:' + ( 
+                    sessionStorage.getItem("currentpage") == "2" && 
+                    allow ? "block":"none") ;
+            },
+        //获取初始数据
+            getdata() {
+                //console.log('进入了getdata函数');
+                var self = this;
+                axios.get('../server/roomsinfo.php', {
+                    params: {
+                        username:sessionStorage.getItem("username"),//发送用户名以查权限申请获得数据
+                    }
+                })
+                .then(function (response) {
+                    if(sessionStorage.getItem("currentpage") != "2"){return;}
+                    let data=response.data;
+                    if(data.state=="OK"){
+                        console.log("get data successfully!");
+                        self.roomsTypeData=[];
+                        self.type=[];
+                        self.roomsData=[];
+                        for (var i = data.roomtypes.length - 1; i >= 0; i--) {
+                            self.roomsTypeData.push(data.roomtypes[i]);
+                            self.type.push({text:data.roomtypes[i].typename,value:data.roomtypes[i].typename});
+                        }
+                        //console.log(self.type);
+                        for (var i = data.rooms.length - 1; i >= 0; i--) {
+                            self.roomsData.push(data.rooms[i]);
+                        }  
+                    }else{
+                        console.log('error: get roomsinfo state != OK');
+                        vue.$message.error(data.state);
+                    }
+                })
+                .catch(function (error) {
+                    console.log(error);
+                    vue.$message.error('网络异常');
+                }) 
+            },
+        //单击行函数
+            handleCurrentChange(val) {
+                this.currentRow = val;
+            },
+        //按钮函数
+            //编辑行
+            handleEdit(index, row, formName) {
+                if(formName == 'roomtype'){
+                    //console.log(index, row);
+                    this.dialogFormVisible = true;
+                    Object.assign(this.roomtype,row);
+                    //对象深拷贝，避免指针赋值
+                    //console.log(this.roomtype);
+                }else{
+                    this.dialogFormVisible2 = true;
+                    Object.assign(this.room,row);
+                    //对象深拷贝，避免指针赋值
+                    this.oldstate = this.room.state;
+                    this.oldroomid = this.room.roomid;
+                    //console.log(this.room);
+                }
+                this.op='update';
+            },
+            //删除行
+            handleDelete(index, row, formName) {
+                var self = this;
+                this.room.roomid=row.roomid;
+                this.roomtype.typeid=row.typeid;
+                if(row.state=='used'){
+                    vue.$message.warning('该房间正在使用中，无法删除！');
+                    return;
+                };
+                this.$confirm('删除后不可恢复，是否确认删除?', '提示', {
+                    confirmButtonText: '确认',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                })
+                .then(() => {
+                    axios.get(formName == 'room'?'../server/changeroom.php':'../server/changeroomtype.php', {
+                        params: formName == 'room' ? {
+                            username:sessionStorage.getItem("username"),
+                            op:'delete',
+                            roomid:self.room.roomid            
+                        }:{
+                            username:sessionStorage.getItem("username"),
+                            op:'delete',
+                            typeid:self.roomtype.typeid
+                        }
+                    })
+                    .then(function (response) {
+                        //console.log(response.data);
+                        let data=response.data;
+                        if(data.state=="OK"){
+                            vue.$message.success('删除成功');
+                            self.getdata();       
+                        }else{
+                            console.log('error: state != OK');
+                            vue.$message.error(data.state);
+                        }
+                    })
+                    .catch(function (error) {
+                        console.log(error);
+                        vue.$message.error('网络异常');
+                    });
+                })
+                .catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消删除'
+                    });          
+                });
+                this.op='delete';
+            },
+            //增加行
+            addtype(formName){
+                if(formName == 'roomtype'){
+                    this.roomtype = {
+                        typeid:'',
+                        typename:'',
+                        bedsnum:'',
+                        price:'',
+                        description:''
+                    };
+                    this.dialogFormVisible = true;    
+                }else{
+                    this.room = {
+                        roomid:'',
+                        floor:1,
+                        state:'',
+                        price:'',
+                        description:'',
+                        typename:'',
+                        roomtypeid:''
+                    }
+                    this.dialogFormVisible2 = true;
+                }
+                this.op='add';                
+            },
+        //房间详细信息函数
+            fillfrom(){
+                //console.log(this.roomsTypeData.typename);
+                for (var i = this.roomsTypeData.length - 1; i >= 0; i--) {
+                    if (this.room.typename === this.roomsTypeData[i].typename) {
+                        this.room.roomtypeid = this.roomsTypeData[i].typeid;
+                        this.room.price = this.roomsTypeData[i].price;
+                        this.room.description = this.roomsTypeData[i].description;
+                    }
+                }
+            },//根据选择的房间类型填入相关数据
+            getroomtype(item){
+                return item.text;
+            },//获取房间类型文字内容
+            disablestate1(){
+                if(this.room.state == 'used'){ return true; }
+                else{ return false; }
+            },//弹窗空闲单选禁用规则
+            disablestate3(){
+                if(this.room.state == 'used'){ return true; }
+                else{ return false; }
+            },//弹窗不可用单选禁用规则
+        //提交弹窗信息函数
+            submitForm(formName){
+                var self = this;
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        axios.get(formName == 'room'?'../server/changeroom.php':'../server/changeroomtype.php', {
+                            params: formName == 'room'?{
+                                username:sessionStorage.getItem("username"),
+                                op:self.op,
+                                roomid:self.room.roomid,
+                                floor:self.room.floor,
+                                state:self.room.state,
+                                price:self.room.price,
+                                description:self.room.description,
+                                roomtypeid:self.room.roomtypeid,
+                                oldroomid:self.oldroomid
+                            }:{
+                                username:sessionStorage.getItem("username"),
+                                op:self.op,
+                                typeid:self.roomtype.typeid,
+                                typename:self.roomtype.typename,
+                                bedsnum:self.roomtype.bedsnum,
+                                price:self.roomtype.price,
+                                description:self.roomtype.description
+                            }
+                        })
+                        .then(function (response) {
+                            //console.log(response.data);
+                            let data=response.data;
+                            if(data.state=="OK"){
+                                console.log("change successfully!");
+                                vue.$message.success('操作成功');
+                                self.getdata();
+                                self.dialogFormVisible = false;
+                                self.dialogFormVisible2 = false;                     
+                            }else{
+                                console.log('error: state != OK');
+                                vue.$message.error(data.state);
+                            }
+                        })
+                        .catch(function (error) {
+                            console.log(error);
+                            vue.$message.error('网络异常');
+                        }) 
+                    } else {
+                        console.log('error submit!!');//未通过表单数据规则验证
+                        return false;
+                    }
+                });
+            },
+        //过滤器函数
+            //清除过滤器和排序
+            clearFilter() {
+                this.$refs.roomsData.clearFilter();
+                this.$refs.roomsData.clearSort();
+            },
+            //房间类型过滤器
+            filterTag(value, row) {
+                return row.typename === value;
+            },
+            //房间状态过滤器
+            filterTag2(value, row) {
+                return row.state === value;
+            },
+        //弹窗关闭时重置函数
+            handleClose1(done) {
+                this.roomtype = {
+                    typeid:'',
+                    typename:'',
+                    bedsnum:'',
+                    price:'',
+                    description:''
+                };
+                done();
+            },
+            handleClose2(done) {
+                this.room = {
+                    roomid:'',
+                    floor:1,
+                    state:'',
+                    price:'',
+                    description:'',
+                    typename:'',
+                    roomtypeid:''
+                }
+                this.oldroomid='';
+                done();
+            },
+        //清空弹窗数据
+            resetForm(formName) {
+                if(formName == 'roomtype'){
+                    this.roomtype = {
+                        typeid:'',
+                        typename:'',
+                        bedsnum:'',
+                        price:'',
+                        description:''
+                    };
+                }else{
+                    this.room = {
+                        roomid:'',
+                        floor:1,
+                        state:this.oldstate,
+                        price:'',
+                        description:'',
+                        typename:'',
+                        roomtypeid:''
+                    }
+                    this.oldroomid='';
+                }
+            }
+        }
+    });
+</script>

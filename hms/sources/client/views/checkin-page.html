@@ -1,0 +1,1030 @@
+<template id="checkin-page">
+    <el-tabs v-model="activeName" type="border-card" :style=subpage1_3()>
+    <!--标签页1-散客入住-->
+        <el-tab-pane label="散客入住" name=first><el-row>
+            <el-col :span="8">
+                <el-input placeholder="搜索预约订单" v-model="input1" class="input-with-select searchtype">
+                    <el-select v-model="select1" slot="prepend" placeholder="字段类型">
+                        <el-option label="姓名" value="1"></el-option>
+                        <el-option label="联系电话" value="2"></el-option>
+                    </el-select>
+                    <el-button slot="append" icon="el-icon-search" @click="searchOrder('guestForm')"></el-button>
+                </el-input>
+                <div class="guestavatar">
+                    <el-upload class="avatar-uploader"
+                        :action=getURL()
+                        :show-file-list="false"
+                        :before-upload="beforeAvatarUpload"
+                        :on-success="successAvatarUpload">
+                    <el-avatar shape="square" :size="80" :src=URL></el-avatar>
+                    </el-upload>
+                </div>
+                <div class="checkInGuest">
+                <el-form ref="guestForm" :rules="rules1" :model="guestForm" label-width="80px" class="demo-ruleForm" >
+                    <el-form-item label="姓名" prop="name">
+                        <el-input v-model="guestForm.name"></el-input>
+                    </el-form-item>
+                    <el-form-item label="联系电话" prop="tel">
+                        <el-input v-model="guestForm.tel"></el-input>
+                    </el-form-item>
+                    <el-form-item label="身份证号" prop="IDnumber">
+                        <el-input v-model="guestForm.IDnumber"></el-input>
+                    </el-form-item>
+                    <el-form-item label="预住天数">
+                        <el-input-number v-model="guestForm.keepDays" :step="1" :min="1" step-strictly style="width:250px;" @change="showIdleRooms('guestForm')"></el-input-number>
+                    </el-form-item>
+                    <el-form-item label="房间价格">
+                        <el-input-number  v-model="guestForm.price" :step="5" :min=currentRow.price*0.9 :max=currentRow.price*1.1 :precision="2" style="width:250px;" autocomplete="off"></el-input-number>
+                    </el-form-item>
+                    <el-form-item label="备注">
+                        <el-input type="textarea" :autosize="{ minRows: 3, maxRows: 4}" v-model="guestForm.textarea"></el-input>
+                    </el-form-item>
+                </el-form>
+
+                <div slot="footer" class="footer">
+                    <el-button @click="CancelAll('guestForm')">取消</el-button>
+                    <el-button type="info" plain @click="clearFilter('guestForm')">重置房间过滤&amp;排序</el-button>
+                    <el-button type="primary" @click="submitForm('guestForm')">提交</el-button>
+                </div></div>
+            </el-col>
+            
+            <el-col :span="16"><div class="checkInRoom">
+                <el-table :data="roomsData1" highlight-current-row @current-change="handleCurrentChange" ref="roomsData1" height="660">
+                    <el-table-column prop="roomid" sortable label="房间号" width="90"></el-table-column>
+                    <el-table-column prop="floor" sortable label="楼层" width="75" align="center"></el-table-column>
+                    <el-table-column prop="state" label="状态" width="80" align="center"
+                        :filters=statetype
+                        :filter-method="filterTag2"
+                        filter-placement="bottom-end">
+                        <template slot-scope="scope">
+                            <el-tag size="mini" :type="scope.row.state === 'idle' ? 'success' : (scope.row.state === 'used' ? 'warning' : 'danger')" disable-transitions>{{scope.row.state === 'idle' ? '空闲' : (scope.row.state === 'used' ? '使用中' : '不可用')}}</el-tag>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="price" sortable label="价格" width="100" align="center"></el-table-column>
+                    <el-table-column prop="typename" label="房间类型" width="100"
+                        :filters=type
+                        :filter-method="filterTag"
+                        filter-placement="bottom-end">
+                        <template slot-scope="scope">
+                            <el-tag size="mini" type="primary" disable-transitions>{{scope.row.typename}}</el-tag>
+                        </template>
+                    </el-table-column>
+                    <el-table-column prop="bedsnum" sortable label="床数" width="75" align="center"></el-table-column>
+                    <el-table-column prop="description" label="描述" :show-overflow-tooltip=true></el-table-column>
+                </el-table>
+            </div></el-col>
+        </el-row></el-tab-pane>
+
+        <!--搜索预约弹出框-->
+            <el-dialog width="63%" title="散客预约搜索结果" :visible.sync="dialogFormVisible" :close-on-click-modal=false>
+                <el-table :data="guestOrder" highlight-current-row @current-change="handleCurrentChange2" ref="guestOrder">
+                    <el-table-column prop="orderid" sortable label="预约单号" width="240" align="center"></el-table-column>
+                    <el-table-column prop="name" label="顾客姓名" width="130" align="center"></el-table-column>
+                    <el-table-column prop="tel" label="顾客电话" width="150" align="center"></el-table-column>
+                    <el-table-column prop="sex" label="性别" width="80" align="center"></el-table-column>
+                    <el-table-column prop="roomid" sortable label="预约房号" width="150" align="center"></el-table-column>
+                    <el-table-column prop="time" sortable label="预约日期" width="130" align="center"></el-table-column>
+                    <el-table-column prop="predictdays" sortable label="预住天数" align="center"></el-table-column>
+                </el-table>
+                <div slot="footer" class="dialog-footer">
+                    <span id="note">注：单击行选择预约</span>
+                    <el-button @click="dialogFormVisible = false; CancelAll('guestForm'); input1='';">取消</el-button>
+                    <el-button type="primary" @click="dialogFormVisible = false;">确认</el-button>
+                </div>
+            </el-dialog>
+
+    <!--标签页2-团体入住-->
+        <el-tab-pane label="团体入住" name=second>
+            <el-row>
+                <el-col :span=ListWidth>
+                    <el-tabs tab-position='left' v-model="activeName2">
+                        <el-tab-pane label="团体登记" name=step1>
+                            <div class="checkInGuest2">
+                                <el-input placeholder="搜索预约订单" v-model="input2" class="input-with-select searchtype">
+                                    <el-select v-model="select2" slot="prepend" placeholder="字段类型">
+                                        <el-option label="联系电话" value="1"></el-option>
+                                        <el-option label="联系人" value="2"></el-option>
+                                        <el-option label="团队名" value="3"></el-option>
+                                    </el-select>
+                                    <el-button slot="append" icon="el-icon-search" @click="searchOrder('groupForm')"></el-button>
+                                </el-input>
+                                <div class="checkInGuest">
+                                    <el-form ref="groupForm" :rules="rules2" :model="groupForm" label-width="80px" class="demo-ruleForm" >
+                                        <el-form-item label="团队名" prop="groupName">
+                                            <el-input v-model="groupForm.groupName"></el-input>
+                                        </el-form-item>
+                                        <el-form-item label="联系人" prop="contectName">
+                                            <el-input v-model="groupForm.contectName"></el-input>
+                                        </el-form-item>
+                                        <el-form-item label="联系电话" prop="tel">
+                                            <el-input v-model="groupForm.tel"></el-input>
+                                        </el-form-item>
+                                        <el-form-item label="预住天数">
+                                            <el-input-number v-model="groupForm.keepDays" :step="1" :min="1" step-strictly style="width:250px;" @change="showIdleRooms('groupForm')"></el-input-number>
+                                        </el-form-item>
+                                        <el-form-item label="预定房数">
+                                            {{ groupForm.membersnum }}&nbsp;间
+                                        </el-form-item>
+                                        <el-form-item label="备注">
+                                            <el-input type="textarea" :autosize="{ minRows: 3, maxRows: 4}" v-model="groupForm.textarea"></el-input>
+                                        </el-form-item>
+                                    </el-form>
+
+                                    <div slot="footer" class="footer2">
+                                        <el-button @click="CancelAll('groupForm')">清空</el-button>
+                                        <el-button type="info" plain @click="clearFilter('groupForm')">重置房间过滤&amp;排序</el-button>
+                                        <el-button type="primary" @click="activeName2='step2';">继续</el-button>
+                                    </div>
+                                </div>
+                            </div>
+                        </el-tab-pane>
+
+                        <el-tab-pane label="成员入住" name=step2>
+                            <div class="groupavatar">
+                                <el-upload class="avatar-uploader"
+                                    :action=getURL()
+                                    :show-file-list="false"
+                                    :before-upload="beforeAvatarUpload"
+                                    :on-success="successAvatarUpload2">
+                                <el-avatar shape="square" :size="80" :src=guest.photo></el-avatar>
+                                </el-upload>
+                            </div>
+                        <div class="checkInGuest">
+                            <el-form ref="guest" :rules="rules1" :model="guest" label-width="80px" class="demo-ruleForm" >
+                                <el-form-item label="姓名" prop="name">
+                                    <el-input v-model="guest.name"></el-input>
+                                </el-form-item>
+                                <el-form-item label="联系电话" prop="tel">
+                                    <el-input v-model="guest.tel"></el-input>
+                                </el-form-item>
+                                <el-form-item label="身份证号" prop="IDnumber">
+                                    <el-input v-model="guest.IDnumber"></el-input>
+                                </el-form-item>
+                                <el-form-item label="入住房间" prop="roomid">
+                                    <el-select v-model="guest.roomid" placeholder="请选择房间号" @change="fillprice(guest.roomid)">
+                                        <el-option v-for="room in checkedRooms" :label=room.roomid :value=room.roomid :disabled=disabled(room.roomid)></el-option>
+                                    </el-select>
+                                </el-form-item>
+                                <el-form-item label="房间价格">
+                                    <el-input-number v-model="guest.price" :step="5" :min=currentRow2.price*0.9 :max=currentRow2.price*1.1 :precision="2" style="width:250px;" autocomplete="off"></el-input-number>
+                                </el-form-item>
+                                <el-form-item label="备注">
+                                    <el-input type="textarea" :autosize="{ minRows: 3, maxRows: 4}" v-model="groupForm.textarea"></el-input>
+                                </el-form-item>
+                            </el-form>
+
+                            <div slot="footer" class="footer2">
+                                <el-button @click="CancelAll('guest')">取消</el-button>
+                                <el-button type="info" plain @click="clearFilter('groupForm')">重置房间过滤&amp;排序</el-button>
+                                <el-button type="primary" @click="saveguest">{{ groupForm.guests.length==(groupForm.membersnum-1) ? '完成':'继续' }}</el-button>
+                            </div>
+                        </div>
+                        </el-tab-pane>
+                        <el-tab-pane label="查看订单" name=step3>
+                            <div class="CheckInList" :style="CheckInList()">
+                                <el-row>
+                                    <el-col :span=4 ><span>团队名&nbsp;:&nbsp;{{ groupForm.groupName }}</span></el-col>
+                                    <el-col :span=4 ><span>联系人&nbsp;:&nbsp;{{ groupForm.contectName }}</span></el-col>
+                                    <el-col :span=4 ><span>联系电话&nbsp;:&nbsp;{{ groupForm.tel }}</span></el-col>
+                                    <el-col :span=4 ><span>预住天数&nbsp;:&nbsp;{{ groupForm.keepDays }}&nbsp;&nbsp;天</span></el-col>
+                                    <el-col :span=4 ><span>预定房数&nbsp;:&nbsp;{{ groupForm.membersnum }}&nbsp;&nbsp;间</span></el-col>
+                                    <el-col :span=4 ><span>总金额&nbsp;:&nbsp;{{ total() }}&nbsp;&nbsp;元</span></el-col>
+                                </el-row>
+                            </div>
+                            <div class="guestTable">
+                                <el-table :data="groupForm.guests" ref="groupForm.guests">
+                                    <el-table-column prop="name" label="姓名" width="120" align="center"></el-table-column>
+                                    <el-table-column prop="tel" label="电话" width="120" align="center"></el-table-column>
+                                    <el-table-column prop="IDnumber" sortable label="身份证号" width="230" align="center"></el-table-column>
+                                    <el-table-column prop="price" sortable label="价格" width="120" align="center"></el-table-column>
+                                    <el-table-column prop="roomid" sortable label="房间号" width="120" align="center"></el-table-column>
+                                    <el-table-column label="操作" align="center">
+                                        <template slot-scope="scope">
+                                            <el-button size="mini" type="success" plain @click="handleEdit(scope.$index, scope.row)">编辑</el-button>
+                                        </template>
+                                    </el-table-column>
+                                </el-table>
+                            </div>
+                            <!--编辑弹出框-->
+                                <el-dialog width="30%" title="编辑成员信息" :visible.sync="dialogFormVisible3" :close-on-click-modal=false>
+                                    <el-form ref="editGuest" :rules="rules1" :model="editGuest" label-width="80px" class="demo-ruleForm" >
+                                        <el-form-item label="姓名" prop="name">
+                                            <el-input v-model="editGuest.name"></el-input>
+                                        </el-form-item>
+                                        <el-form-item label="联系电话" prop="tel">
+                                            <el-input v-model="editGuest.tel"></el-input>
+                                        </el-form-item>
+                                        <el-form-item label="身份证号" prop="IDnumber">
+                                            <el-input v-model="editGuest.IDnumber"></el-input>
+                                        </el-form-item>
+                                        <el-form-item label="入住房间" prop="roomid">
+                                            <el-select v-model="editGuest.roomid" placeholder="请选择房间号">
+                                                <el-option v-for="room in checkedRooms" :label=room.roomid :value=room.roomid :disabled=true></el-option>
+                                            </el-select>
+                                        </el-form-item>
+                                        <el-form-item label="房间价格">
+                                            <el-input-number v-model="editGuest.price" :step="5" :min=oldprice*0.9 :max=oldprice*1.1 :precision="2" style="width:250px;" autocomplete="off"></el-input-number>
+                                        </el-form-item>
+                                        <el-form-item label="备注">
+                                            <el-input type="textarea" :autosize="{ minRows: 3, maxRows: 4}" v-model="groupForm.textarea"></el-input>
+                                        </el-form-item>
+                                    </el-form>
+                                    <div slot="footer" class="dialog-footer">
+                                        <el-button @click="cancelEdit()">取消</el-button>
+                                        <el-button type="primary" @click="saveEdit()">确认</el-button>
+                                    </div>
+                                </el-dialog>
+
+                            <div class="CheckInButton" :style="CheckInList()">
+                                <el-button @click="CancelAll('groupForm')">取消</el-button>
+                                <el-button type="primary" @click="submitForm('groupForm')">确认提交</el-button>
+                            </div>
+                        </el-tab-pane>
+                    </el-tabs>
+
+                </el-col>
+                <el-col :span=TableWidth>
+                    <div :style=roomTable()>
+                        <el-table :data="roomsData2" @selection-change="handleSelectionChange" @select="handleSelect" @select-all="handleSelectAll" ref="roomsData2" height="660">
+                            <el-table-column type="selection" width="45"></el-table-column>
+                            <el-table-column prop="roomid" sortable label="房间号" width="90"></el-table-column>
+                            <el-table-column prop="floor" sortable label="楼层" width="75" align="center"></el-table-column>
+                            <el-table-column prop="state" label="状态" width="80" align="center"
+                                :filters=statetype
+                                :filter-method="filterTag2"
+                                filter-placement="bottom-end">
+                                <template slot-scope="scope">
+                                    <el-tag size="mini" :type="scope.row.state === 'idle' ? 'success' : (scope.row.state === 'used' ? 'warning' : 'danger')" disable-transitions>{{scope.row.state === 'idle' ? '空闲' : (scope.row.state === 'used' ? '使用中' : '不可用')}}</el-tag>
+                                </template>
+                            </el-table-column>
+                            <el-table-column prop="price" sortable label="价格" width="100" align="center"></el-table-column>
+                            <el-table-column prop="typename" label="房间类型" width="100"
+                                :filters=type
+                                :filter-method="filterTag"
+                                filter-placement="bottom-end">
+                                <template slot-scope="scope">
+                                    <el-tag size="mini" type="primary" disable-transitions>{{scope.row.typename}}</el-tag>
+                                </template>
+                            </el-table-column>
+                            <el-table-column prop="bedsnum" sortable label="床数" width="75" align="center"></el-table-column>
+                            <el-table-column prop="description" label="描述" :show-overflow-tooltip=true></el-table-column>
+                        </el-table>
+                    </div>
+                </el-col>
+            </el-row>
+
+        <!--搜索预约弹出框-->
+            <el-dialog width="63%" title="团体预约搜索结果" :visible.sync="dialogFormVisible2" :close-on-click-modal=false>
+                <el-table :data="groupOrder" highlight-current-row @current-change="handleCurrentChange3" ref="groupOrder">
+                    <el-table-column prop="orderid" sortable label="预约单号" width="200" align="center"></el-table-column>
+                    <el-table-column prop="groupName" label="团队名" width="130" align="center"></el-table-column>
+                    <el-table-column prop="name" label="联系人" width="130" align="center"></el-table-column>
+                    <el-table-column prop="tel" label="联系电话" width="140" align="center"></el-table-column>
+                    <el-table-column prop="membersnum" sortable label="预约房数" width="120" align="center"></el-table-column>
+                    <el-table-column prop="time" sortable label="预约日期" width="130" align="center"></el-table-column>
+                    <el-table-column prop="predictdays" sortable label="预住天数" align="center"></el-table-column>
+                </el-table>
+                <div slot="footer" class="dialog-footer">
+                    <span id="note">注：单击行选择预约</span>
+                    <el-button @click="dialogFormVisible2 = false; CancelAll('groupForm'); input2='';">取消</el-button>
+                    <el-button type="primary" @click="dialogFormVisible2 = false;">确认</el-button>
+                </div>
+            </el-dialog>
+
+        </el-tab-pane>
+    </el-tabs>
+</template>
+<style>
+    .checkInGuest input { width: 250px; }
+    .checkInGuest textarea { width: 250px; }
+    .checkInRoom { padding-left: 20px; }
+    .checkInGuest { margin-left: 70px;}
+    .footer { position: absolute; bottom: 20px; width: 100%; }
+    .footer2 { width: 100%; }
+    .input-with-select { width: 420px; margin-left: 20px; margin-top: 10px; margin-bottom: 30px;  }
+    .guestavatar { margin-bottom: 20px; text-align: center; }
+    .groupavatar { margin-top: 30px; margin-bottom: 20px; text-align: center; }
+    .checkInGuest2 { margin-top: 20px; }
+    #note { color: #909399; margin-right: 20px; font-size: small; }
+    /*#tab-0 { margin-top: 20px; }*/
+    #tab-2 { margin-bottom: 530px; }
+    .CheckInList { margin: 40px 0 40px 40px; }
+    .CheckInButton { margin-right: 50px; text-align: center; margin-top: 50px; }
+    .guestTable { margin: 10px 200px; }
+</style>
+<script>
+    Vue.component('checkin-page', {
+        template:'#checkin-page',
+        //打开/刷新时获取数据
+        beforeMount: function () {
+            if(sessionStorage.getItem("username") != null){
+                this.getdata();
+            }
+        },
+        data(){
+        //校对规则
+            var validateGroupName = (rule, value, callback) =>{
+                if (value === '') {
+                    callback(new Error('团队名不能为空'));
+                }else if(value.trim().length > 20) {
+                    callback(new Error('团队名不能超过20个字符'));
+                }
+                callback();
+            };
+            var validateName = (rule, value, callback) =>{
+                if (value === '') {
+                    callback(new Error('姓名不能为空'));
+                }else if(value.trim().length > 20) {
+                    callback(new Error('姓名不能超过20个字符'));
+                }
+                callback();
+            };
+            var validateContectName = (rule, value, callback) =>{
+                if (value === '') {
+                    callback(new Error('联系人姓名不能为空'));
+                }else if(value.trim().length > 20) {
+                    callback(new Error('联系人姓名不能超过20个字符'));
+                }
+                callback();
+            };
+            var validateTel = (rule, value, callback) =>{
+                if (value === '') {
+                    callback(new Error('联系电话不能为空'));
+                }
+                if(!/^[-0-9]{1,20}$/.test(value.trim())) {
+                    callback(new Error('只能包含数字和-，不超过20个字符'));
+                }
+                callback();
+            };
+            var validateID = (rule, value, callback) =>{
+                if (value === '') {
+                    callback(new Error('身份证号不能为空'));
+                }
+                if(!/^[0-9x]{18}$/.test(value.trim())) {
+                    callback(new Error('只能包含数字和x，必须为18个字符'));
+                }
+                callback();
+            };
+            var validateRoomid = (rule, value, callback) =>{
+                if (value === '') {
+                    callback(new Error('房间号不能为空'));
+                }
+                callback();
+            };
+            
+        //数据
+            return{
+            //布局
+                ListWidth:10,
+                TableWidth:14,
+            //顾客预约信息表单
+                guestForm:{
+                    name:'',
+                    tel:'',
+                    IDnumber:'',
+                    time:new Date(),
+                    keepDays:'',
+                    price:0.00,
+                    roomid:'',
+                    textarea:''
+                },
+                groupForm:{
+                    groupName:'',
+                    contectName:'',
+                    tel:'',
+                    time:new Date(),
+                    keepDays:'',
+                    membersnum:0,
+                    textarea:'',
+                    roomids:[],//只用于接收搜索返回数据中的房间号
+                    guests:[]
+                },
+                guest:{
+                    name:'',
+                    tel:'',
+                    IDnumber:'',
+                    price:0.00,
+                    roomid:'',
+                    photo:"../pics/default2.jpeg"
+                },
+                editGuest:{
+                    name:'',
+                    tel:'',
+                    IDnumber:'',
+                    price:0.00,
+                    roomid:'',
+                    photo:"../pics/default2.jpeg"
+                },
+                oldprice:0.00,
+                //编辑的行号
+                editRow:'',
+            //备注信息
+                //textarea1:'',
+                //textarea2:'',
+                //textarea3:'',
+                //textarea4:'',
+            //单击的行
+                currentRow: {
+                    price: 0.00,
+                    state: ""
+                },
+                currentRow2: {
+                    price: 0.00,
+                    state: ""
+                },
+            //选择的房间
+                checkedRooms:[],
+            //房间总数据
+                roomsData1:[],
+                roomsData2:[],
+            //房间类型
+                type: [],
+            //房间状态
+                statetype: [{ text: '空闲',value: 'idle' },{ text: '使用中',value: 'used' },{ text: '不可用',value: 'invalid' }],
+            //初始激活的标签页  
+                activeName: 'first',
+                activeName2: 'step1',
+            //搜索类别
+                select1:'2',
+                select2:'1',
+            //搜索内容
+                input1:'',
+                input2:'',
+            //搜索弹窗
+                dialogFormVisible:false,
+                dialogFormVisible2:false,
+                dialogFormVisible3:false,
+            //搜索结果
+                guestOrder:[],
+                groupOrder:[],
+            //默认照片
+                URL:"../pics/default2.jpeg",
+            //校对规则
+                rules1: {
+                    name:[ { validator: validateName, trigger: 'blur' } ],
+                    tel:[ { validator: validateTel, trigger: 'blur' } ],
+                    IDnumber:[ { validator: validateID, trigger: 'blur' } ],
+                    roomid:[ { validator: validateRoomid, trigger: 'change' } ]
+                },
+                rules2:{
+                    groupName:[ { validator: validateGroupName, trigger: 'blur' } ],
+                    contectName:[ { validator: validateContectName, trigger: 'blur' } ],
+                    tel:[ { validator: validateTel, trigger: 'blur' } ]
+                }
+            };
+        },
+        methods: {
+        //切换页面
+            subpage1_3() {
+                return 'display:' + ( 
+                    sessionStorage.getItem("currentpage") == "1-3" ? "block":"none") ;
+            },
+            roomTable(){
+                return 'display:' + (this.activeName2 == "step3" ? "none":"block") ;
+            },
+            CheckInList(){
+                if(this.activeName2 == "step3"){
+                    this.ListWidth=24;
+                }else{
+                    this.ListWidth=10;
+                }
+                return 'display:' + (this.activeName2 == "step3" ? "block":"none") ;
+            },
+        //获取数据
+            getdata() {
+                if(sessionStorage.getItem("currentpage") != "1-3"){return;}
+                var self = this;
+                axios.get('../server/page2info.php', {
+                    params: {
+                        username:sessionStorage.getItem("username")//发送用户名以 查询是否存在该用户 获得数据
+                    }
+                })
+                .then(function (response) {
+                    //console.log(response.data);
+                    let data=response.data;
+                    if(data.state=="OK"){
+                        console.log("get page1-3 data successfully!");
+                        for (var i = data.roomsData.length - 1; i >= 0; i--) {
+                            self.roomsData1.push(data.roomsData[i]);
+                            self.roomsData2.push(data.roomsData[i]);
+                        }  
+                        for (var i = data.type.length - 1; i >= 0; i--) {
+                            self.type.push({text:data.type[i],value:data.type[i]});
+                        }
+                    }else{
+                        console.log('error: get page1-3 state != OK');
+                        vue.$message.error(data.state);
+                    }
+                })
+                .catch(function (error) {
+                    console.log(error);
+                    vue.$message.error('网络异常');
+                }) 
+            },
+        //根据预约时间显示可预约房间
+            showIdleRooms(formname){
+                var self = this;
+                var time1 = this.guestForm.time;
+                var time2 = this.groupForm.time;
+                axios.get('../server/showidlerooms.php', {
+                    params: formname=='guestForm' ? {
+                        username:sessionStorage.getItem("username"),
+                        orderTime:time1.UTCtoLOC(),
+                        keepDays:this.guestForm.keepDays
+                    }:{
+                        username:sessionStorage.getItem("username"),
+                        orderTime:time2.UTCtoLOC(),
+                        keepDays:this.groupForm.keepDays
+                    }
+                })
+                .then(function (response) {
+                    //console.log(response.data);
+                    let data=response.data;
+                    if(data.state=="OK"){
+                        console.log("show successfully!");
+                        vue.$message.success('已获取可预约房间');
+                        if( formname=='guestForm' ){ 
+                            self.roomsData1=data.roomsData; 
+                        }else{ 
+                            self.roomsData2=data.roomsData;
+                            self.checkedRooms=[];
+                            self.groupForm.membersnum=0;
+                        }
+                        for (var i = data.type.length - 1; i >= 0; i--) {
+                            self.type.push({text:data.type[i],value:data.type[i]});
+                        }              
+                    }else{
+                        console.log('error: show idle rooms state != OK');
+                        vue.$message.error(data.state);
+                    }
+                })
+                .catch(function (error) {
+                    console.log(error);
+                    vue.$message.error('网络异常');
+                })
+            },
+        //照片检验
+            beforeAvatarUpload(file) {
+                const isJPG = file.type === 'image/jpeg';
+                const isLt10M = file.size / 1024 / 1024 < 10;
+                if (!isJPG) {
+                    console.log(file.type);
+                    this.$message.error('上传照片只能是 jpeg 格式!');
+                }
+                if (!isLt10M) {
+                    this.$message.error('上传照片大小不能超过 10MB!');
+                }
+                return isJPG && isLt10M;
+            },
+            successAvatarUpload(response, file, fileList){
+                if(response!="error"){this.URL=response;}
+            },
+            successAvatarUpload2(response, file, fileList){
+                if(response!="error"){this.guest.photo=response;}
+            },
+            getURL(){
+                return "../server/uploadphoto.php?username="+sessionStorage.getItem("username");
+            },
+        //点亮/勾选预约房间
+            highlightRoom(roomid){
+                var i=0;
+                while(this.roomsData1[i]){
+                    if(this.roomsData1[i].roomid==roomid){
+                        this.$refs.roomsData1.setCurrentRow(this.roomsData1[i]);
+                    }
+                    i++;
+                }
+            },
+            checkedRoom(roomid){
+                var i=0;
+                while(this.roomsData2[i]){
+                    if(this.roomsData2[i].roomid==roomid){
+                        this.$refs.roomsData2.toggleRowSelection(this.roomsData2[i],true);
+                        this.checkedRooms.push(this.roomsData2[i]);
+                    }
+                    i++;
+                }
+            },
+        //查看订单函数
+            //编辑行
+            handleEdit(index, row) {
+                this.dialogFormVisible3 = true;
+                Object.assign(this.editGuest,row);
+                this.fillprice2(this.editGuest.roomid);
+                this.editRow = index;
+                console.log(this.oldprice);
+            },
+            //保存编辑
+            saveEdit(){
+                this.dialogFormVisible3 = false;
+                Object.assign(this.groupForm.guests[this.editRow],this.editGuest);
+            },
+            //取消编辑
+            cancelEdit(){
+                this.dialogFormVisible3 = false;
+                this.editGuest={
+                    name:'',
+                    tel:'',
+                    IDnumber:'',
+                    price:0.00,
+                    roomid:'',
+                    photo:"../pics/default2.jpeg"
+                };
+                this.oldprice=0.00;
+            },
+        //单击行函数
+            handleCurrentChange(val) {
+                //散客预约界面表格
+                if(val === null){ return; }
+                this.currentRow.price = val.price;
+                this.currentRow.state = val.state;
+                this.guestForm.price = val.price;
+                this.guestForm.roomid = val.roomid;
+            },
+            handleCurrentChange2(val){
+                //散客搜索弹窗界面表格
+                if(val === null){ return; }
+                this.guestForm.name=val.name;
+                this.guestForm.tel=val.tel;
+                this.guestForm.keepDays=val.predictdays;
+                this.guestForm.textarea=val.textarea;
+                this.highlightRoom(val.roomid);
+            },
+            handleCurrentChange3(val){
+                //团体搜索弹窗界面表格
+                if(val === null){ return; }
+                this.groupForm.groupName=val.groupName;
+                this.groupForm.contectName=val.name;
+                this.groupForm.tel=val.tel;
+                this.groupForm.membersnum=val.membersnum;
+                this.groupForm.keepDays=val.predictdays;
+                this.groupForm.roomids=val.roomids;
+                this.groupForm.textarea=val.textarea;
+                //console.log(val.roomids);
+                var i=0;
+                while(val.roomids[i]){
+                    this.checkedRoom(val.roomids[i]);
+                    i++;
+                }
+            },
+        //多选
+            handleSelectionChange(val) {
+                this.multipleSelection = val;
+            },
+            handleSelect(selection, row){
+                this.groupForm.membersnum=selection.length;
+                this.checkedRooms=selection;
+                //console.log(this.checkedRooms);
+            },
+            handleSelectAll(selection){
+                this.groupForm.membersnum=selection.length;
+                this.checkedRooms=selection;
+                //console.log(this.checkedRooms);
+            },   
+        //过滤器函数
+            //清除过滤器和排序
+            clearFilter(formName) {
+                if(formName=='guestForm'){
+                    this.$refs.roomsData1.clearFilter();
+                    this.$refs.roomsData1.clearSort();
+                }
+                if(formName=='groupForm'){
+                    this.$refs.roomsData2.clearFilter();
+                    this.$refs.roomsData2.clearSort();
+                }
+            },
+            //房间类型过滤器
+            filterTag(value, row) {
+                return row.typename === value;
+            },
+            //房间状态过滤器
+            filterTag2(value, row) {
+                return row.state === value;
+            },
+        //下拉菜单函数
+            fillprice(roomid){
+                var i=0;
+                while(this.roomsData2[i]){
+                    if(this.roomsData2[i].roomid==roomid){
+                        this.guest.price=this.roomsData2[i].price;
+                        this.currentRow2.price=this.roomsData2[i].price;
+                        this.currentRow2.state=this.roomsData2[i].state;
+                        //console.log(this.guest.price);       
+                        //console.log(this.roomsData2[i].price);                   
+                    }
+                    i++;
+                }
+            },
+            fillprice2(roomid){
+                var i=0;
+                while(this.roomsData2[i]){
+                    if(this.roomsData2[i].roomid==roomid){
+                        this.oldprice=this.roomsData2[i].price       
+                    }
+                    i++;
+                }
+            },
+            disabled(roomid){
+                var i=0;
+                //console.log(e);
+                //debugger;
+                while(this.groupForm.guests[i]){
+                    if(roomid==this.groupForm.guests[i].roomid){ return true; }
+                    i++;
+                }
+                return false;
+            },
+        //按钮函数
+            //搜索
+                searchOrder(formname){
+                    var self=this;
+                    if(formname=="guestForm"){
+                        axios.get('../server/searchorder.php', {
+                            params: self.select1=='1' ? {
+                                username:sessionStorage.getItem("username"),
+                                name:self.input1
+                            }:{
+                                username:sessionStorage.getItem("username"),
+                                tel:self.input1
+                            }
+                        })
+                        .then(function (response) {
+                            //console.log(response.data);
+                            let data=response.data;
+                            if(data.state=="OK"){
+                                console.log("show searchorder successfully!");
+                                //vue.$message.success('已获取可预约房间');
+                                self.guestOrder=data.orderData;   
+                            }else{
+                                console.log('error: show searchorder state != OK');
+                                vue.$message.error(data.state);
+                            }
+                        })
+                        .catch(function (error) {
+                            console.log(error);
+                            vue.$message.error('网络异常');
+                        })
+                        this.dialogFormVisible=true;
+                    }else{
+                        axios.get('../server/searchorder2.php', {
+                            params: self.select2=='1' ? {
+                                username:sessionStorage.getItem("username"),
+                                tel:self.input2
+                            }:(self.select2=='2' ? {
+                                username:sessionStorage.getItem("username"),
+                                contectName:self.input2
+                            }:{
+                                username:sessionStorage.getItem("username"),
+                                groupName:self.input2
+                            })
+                        })
+                        .then(function (response) {
+                            //console.log(response.data);
+                            if(typeof(response.data)=='string'){
+                                data=eval('('+response.data+')');
+                            }else{
+                                data=response.data;
+                            }
+                            //console.log(typeof(data));
+                            if(data.state=="OK"){
+                                console.log("show searchorder successfully!");
+                                self.groupOrder=data.orderData;
+                                //console.log(data.orderData);
+                                //console.log(self.groupOrder);
+                            }else{
+                                console.log('error: show searchorder state != OK');
+                                vue.$message.error(data.state);
+                            }
+                        })
+                        .catch(function (error) {
+                            console.log(error);
+                            vue.$message.error('网络异常');
+                        })
+                        this.dialogFormVisible2=true; 
+                    }
+                },
+            //取消
+                CancelAll(formname){
+                    if(formname=="guestForm"){
+                        this.guestForm.name='';
+                        this.guestForm.tel='';
+                        this.guestForm.IDnumber='';
+                        this.guestForm.time=new Date();
+                        this.guestForm.keepDays='';
+                        this.guestForm.price=0.00;
+                        this.guestForm.roomid='';
+                        this.guestForm.textarea='';
+
+                        this.currentRow.price=0.00;
+                        this.currentRow.state='';
+
+                        this.$refs.roomsData1.setCurrentRow();
+                        this.guestOrder=[];
+                        this.URL="../pics/default2.jpeg";
+                    }else if(formname=="groupForm"){
+                        this.groupForm.groupName='';
+                        this.groupForm.contectName='';
+                        this.groupForm.tel='';
+                        this.groupForm.time=new Date();
+                        this.groupForm.keepDays='';
+                        this.groupForm.membersnum=0;
+                        this.groupForm.textarea='';
+                        this.groupForm.roomids=[];
+                        this.groupForm.guests=[];
+
+                        this.checkedRooms=[];
+                        this.$refs.roomsData2.clearSelection();
+                        this.groupOrder=[];
+                    }else{
+                        this.guest.name='';
+                        this.guest.tel='';
+                        this.guest.IDnumber='';
+                        this.guest.price=0.00;
+                        this.guest.roomid='';
+                        this.guest.photo="../pics/default2.jpeg";
+
+                        this.currentRow2.price=0.00;
+                        this.currentRow2.state='';
+                    }
+                },
+            //保存团队中成员信息
+                saveguest(){
+                    if(this.groupForm.guests.length>=(this.groupForm.membersnum)){ vue.$message.warning('该团预定房间已全部登记完毕'); return; }
+                    this.$refs['guest'].validate((valid) => {
+                        if (valid){
+                            if(this.guest.photo=="../pics/default2.jpeg") { vue.$message.warning('请上传照片以便与身份证比对确认'); return; }
+                            if(this.currentRow2.state!='idle') { vue.$message.warning('该房间非空闲状态无法入住'); return; }
+                            var guest={
+                                name:'',
+                                tel:'',
+                                IDnumber:'',
+                                price:0,
+                                roomid:'',
+                                photo:"../pics/default2.jpeg"
+                            };
+                            Object.assign(guest,this.guest)
+                            this.groupForm.guests.push(guest);
+                            this.CancelAll('guest');
+                        }
+                    })
+                    if(this.groupForm.guests.length==(this.groupForm.membersnum)){
+                        this.activeName2='step3';
+                    }
+                },
+        //计算总金额
+            total(){
+                var i=0;
+                var total=0;
+                while(this.groupForm.guests[i]){
+                    total+=this.groupForm.guests[i].price;
+                    i++;
+                }
+                return total*this.groupForm.keepDays;
+            },
+        //提交弹窗信息函数 ~~~
+            submitForm(formName){
+                if(formName=='guestForm'){
+                    if(this.guestForm.roomid=='') { vue.$message.warning('请单击表格行选择房间'); return; }
+                    if(this.currentRow.state!='idle') { vue.$message.warning('该房间非空闲状态无法入住'); return; }
+                    if(this.URL=="../pics/default2.jpeg") { vue.$message.warning('请上传照片以便与身份证比对确认'); return; }
+                }else{
+                    if(this.groupForm.groupName=='') { vue.$message.warning('请填写团队名'); return; }
+                    if(this.groupForm.contectName=='') { vue.$message.warning('请填写联系人'); return; }
+                    if(this.groupForm.tel=='') { vue.$message.warning('请填写联系电话'); return; }
+                    if(this.groupForm.membersnum==0) { vue.$message.warning('请选择至少一个房间'); return; }
+                    if(this.groupForm.guests.length!=this.groupForm.membersnum) { vue.$message.warning('请继续完善成员信息'); return; }
+
+                    var names=[];
+                    var tels=[];
+                    var IDnumbers=[];
+                    var prices=[];
+                    var roomids=[];
+                    var photos=[];
+                    var i=0;
+                    while(this.groupForm.guests[i]){
+                        names.push(this.groupForm.guests[i].name);
+                        tels.push(this.groupForm.guests[i].tel);
+                        IDnumbers.push(this.groupForm.guests[i].IDnumber);
+                        prices.push(this.groupForm.guests[i].price);
+                        roomids.push(this.groupForm.guests[i].roomid);
+                        photos.push(this.groupForm.guests[i].photo);
+                        i++;
+                    }
+                    //console.log(names);console.log(tels);console.log(IDnumbers);
+                    //console.log(prices);console.log(roomids);console.log(photos);
+                }
+
+                var self = this;
+                var time = new Date();
+                if(formName=='guestForm') {
+                    this.$refs[formName].validate((valid) => {
+                        if (valid) {
+                            console.log('submit');
+                            axios.get('../server/checkIn.php', {
+                                params: {
+                                    username:sessionStorage.getItem("username"),
+                                    name:self.guestForm.name,
+                                    tel:self.guestForm.tel,
+                                    IDnumber:self.guestForm.IDnumber,
+                                    time:time.UTCtoLOC(),
+                                    keepDays:self.guestForm.keepDays,
+                                    price:self.guestForm.price,
+                                    roomid:self.guestForm.roomid,
+                                    textarea:self.guestForm.textarea,
+                                    URL:self.URL
+                                }
+                            })
+                            .then(function (response) {
+                                //console.log(response.data);
+                                let data=response.data;
+                                if(data.state=="OK"){
+                                    console.log("check in successfully!");
+                                    vue.$message.success('操作成功');
+                                    self.URL="../pics/default2.jpeg";
+                                    self.guestForm.name='';
+                                    self.guestForm.tel='';
+                                    self.guestForm.IDnumber='';
+                                    self.guestForm.time=new Date();
+                                    self.guestForm.keepDays='';
+                                    self.guestForm.price=0.00;
+                                    self.guestForm.roomid='';
+                                    self.guestForm.textarea='';
+
+                                    self.currentRow.price=0.00;
+                                    self.currentRow.state='';
+                                    self.type=[];
+                                    self.input1='';
+                                    self.roomsData1=[];
+                                    self.roomsData2=[];
+                                    self.guestOrder=[];
+                                    self.getdata();                   
+                                }else{
+                                    console.log('error: check in state != OK');
+                                    vue.$message.error(data.state);
+                                }
+                            })
+                            .catch(function (error) {
+                                console.log(error);
+                                vue.$message.error('网络异常');
+                            })
+                        } else {
+                            console.log('error submit!!');//未通过表单数据规则验证
+                            return false;
+                        }
+                    });
+                }else{
+                    var params = new FormData();
+                    params.append("username", sessionStorage.getItem("username"));
+                    params.append("username", sessionStorage.getItem("username"));
+                    params.append("groupName", self.groupForm.groupName);
+                    params.append("contectName", self.groupForm.contectName);
+                    params.append("tel", self.groupForm.tel);
+                    params.append("time", time.UTCtoLOC().Format("yyyy-MM-dd"));
+                    params.append("keepDays", self.groupForm.keepDays);
+                    params.append("membersnum", self.groupForm.membersnum);
+                    params.append("textarea", self.groupForm.textarea);
+                    for (let name of names) { params.append("names[]", name); }
+                    for (let tel of tels) { params.append("tels[]", tel); }
+                    for (let idnumber of IDnumbers) { params.append("IDnumbers[]", idnumber); }
+                    for (let price of prices) { params.append("prices[]", price); }
+                    for (let roomid of roomids) { params.append("roomids[]", roomid); }
+                    for (let photo of photos) { params.append("photos[]", photo); }
+                    axios.post('../server/checkIn2.php', params, {headers: {'Content-Type': 'application/x-www-form-urlencoded'}})
+                    .then(function (response) {
+                        //console.log(response.data);
+                        let data=response.data;
+                        if(data.state=="OK"){
+                            console.log("check in 2 successfully!");
+                            vue.$message.success('操作成功');
+                            self.CancelAll('groupForm');
+                            self.CancelAll('guest');
+                            self.editGuest={
+                                name:'',
+                                tel:'',
+                                IDnumber:'',
+                                price:0.00,
+                                roomid:'',
+                                photo:"../pics/default2.jpeg"
+                            };
+                            self.oldprice=0.00;
+                            self.editRow='';
+                            self.roomsData1=[];
+                            self.roomsData2=[];
+                            self.type=[];
+                            self.input2='';
+                            self.groupOrder=[];
+                            self.getdata();                   
+                        }else{
+                            console.log('error: check in 2 state != OK');
+                            vue.$message.error(data.state);
+                        }
+                    })
+                    .catch(function (error) {
+                        console.log(error);
+                        vue.$message.error('网络异常');
+                    })
+                }
+            }
+        }
+    });
+</script>

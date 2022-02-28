@@ -1,0 +1,37 @@
+admins.php 修改当前用户个人信息
+adminspw.php 修改当前用户密码
+changeroom.php 增加/修改/删除房间信息
+changeroomtype.php 增加/修改/删除房间类型信息
+changeuser.php 增加/修改/删除用户信息
+checkIn.php 提交散客入住订单
+checkIn2.php 提交团队入住订单
+checkinguest.php 退房时获取入住的散客订单
+checkin_groupmembers.php 获取团体成员信息
+checkout.php 提交散客退房订单
+checkout2.php 提交团队退房订单
+
+guestpics.php 获取某个顾客的照片
+guestsinfo.php 获取显示的顾客信息和团队信息
+login.php 登录时获取用户名及密码散列值用于比对
+order.php 提交预约订单
+page1info.php 获取首页显示内容
+page2info.php 获取预约时显示的房间信息
+records1.php 显示预约记录报表
+records2.php 显示入住记录报表
+records3.php 显示退房记录报表
+records4.php 显示每日收入报表
+records5.php 显示每月收入报表
+roomcardinfo.php 获取某一间房的详细信息和当前入住顾客的信息
+roomsinfo.php 获取客房管理初始显示的客房和客房类型信息
+searchcheckin.php 搜索团体入住订单
+searchorder.php 入住时搜索散客预约订单
+searchorder2.php 入住时搜索团体预约订单
+setup.sql 数据库创建文件
+showidlerooms.php 根据预抵时间和时长获取可被预约的房间信息
+uploadphoto.php 保存客户的照片
+uploadpic.php 上传用户头像
+usersinfo.php 获取用户管理初始显示的用户信息
+
+common.php
+test.php
+test.sql

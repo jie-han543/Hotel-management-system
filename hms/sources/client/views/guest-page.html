@@ -1,0 +1,253 @@
+<template id="guest-page">
+    <el-tabs v-model="activeName" type="border-card" :style=subpage4()>
+        <el-tab-pane label="散客信息" name="first">
+            <el-row><el-col :span="7">&nbsp;</el-col>
+                <el-col :span="10">
+                <el-input placeholder="请输入搜索内容" v-model="input1" class="input-with-select searchtype" @change="showGuests()">
+                    <el-select v-model="select1" slot="prepend" placeholder="字段类型">
+                        <el-option label="身份证号" value="1"></el-option>
+                        <el-option label="姓名" value="2"></el-option>
+                        <el-option label="联系电话" value="3"></el-option>
+                        <el-option label="现住房间" value="4"></el-option>
+                        <el-option label="现属团队" value="5"></el-option>
+                    </el-select>
+                    <el-button slot="append" icon="el-icon-search"></el-button>
+                </el-input>
+                </el-col>
+            <el-col :span="7">&nbsp;</el-col></el-row>
+            <el-row>
+                <el-col :span="0">&nbsp;</el-col>
+                <el-col :span="20"><el-table :data="guests1" style="width: 100%" highlight-current-row @current-change="handleCurrentChange" ref="guests1">
+                    <el-table-column prop="IDnumber" label="身份证号" width="220" align="center"></el-table-column>
+                    <el-table-column prop="name" label="姓名" width="140" align="center"></el-table-column>
+                    <el-table-column prop="sex" label="性别" width="80" align="center"></el-table-column>
+                    <el-table-column prop="age" sortable label="年龄" width="120" align="center"></el-table-column>
+                    <el-table-column prop="telephone" label="联系电话" width="180" align="center"></el-table-column>
+                    <el-table-column prop="roomid" sortable label="现住房间" width="120" align="center"></el-table-column>
+                    <el-table-column prop="groupname" label="现属团队" align="center" width="200"></el-table-column>
+                    <el-table-column prop="photo" label="照片" align="center">
+                        <template slot-scope="scope">
+                            <el-link :underline="false" @click="showphoto(scope.row)">查看照片<i class="el-icon-view el-icon--right"></i></el-link>
+                        </template>
+                    </el-table-column>
+                </el-table></el-col>
+                <el-col :span="4">
+                    <div class="avatarblock"><el-avatar shape="square" :size="150" :src="URL"></el-avatar></div>
+                </el-col>
+            </el-row>
+            <el-footer>
+                <el-pagination
+                  @current-change=changeTablePage1
+                  :current-page=currentPage1
+                  :page-size="15"
+                  layout="total, prev, pager, next, jumper"
+                  :total="guestsFound.length">
+                </el-pagination>
+            </el-footer>
+        </el-tab-pane>
+
+        <el-tab-pane label="团体信息" name="second">       
+            <el-row><el-col :span="7">&nbsp;</el-col>
+                <el-col :span="10">
+                <el-input placeholder="请输入搜索内容" v-model="input2" class="input-with-select searchtype" @change="showGroups()">
+                    <el-select v-model="select2" slot="prepend" placeholder="字段类型">
+                        <el-option label="团队名称" value="1"></el-option>
+                        <el-option label="联系人" value="2"></el-option>
+                        <el-option label="联系电话" value="3"></el-option>
+                    </el-select>
+                    <el-button slot="append" icon="el-icon-search"></el-button>
+                </el-input>
+                </el-col>
+            <el-col :span="7">&nbsp;</el-col></el-row>
+            
+            <el-row>
+                <el-col :span="12">
+                    <el-table :data="groups1" style="width: 97%" 
+                    highlight-current-row @current-change="handleCurrentChange" ref="groups1">
+                        <el-table-column prop="groupname" label="团队名称" width="230" align="center"></el-table-column>
+                        <el-table-column prop="membersnum" sortable label="房数" width="100" align="center"></el-table-column>
+                        <el-table-column prop="contactname" label="联系人" width="160" align="center"></el-table-column>
+                        <el-table-column prop="contacttel" sortable label="联系电话" align="center"></el-table-column>
+                    </el-table>
+                </el-col>
+                <el-col :span="12">
+                    <el-table :data="groups2" style="width: 99%" 
+                    highlight-current-row @current-change="handleCurrentChange" ref="groups2">
+                        <el-table-column prop="groupname" label="团队名称" width="230" align="center"></el-table-column>
+                        <el-table-column prop="membersnum" sortable label="房数" width="100" align="center"></el-table-column>
+                        <el-table-column prop="contactname" label="联系人" width="160" align="center"></el-table-column>
+                        <el-table-column prop="contacttel" sortable label="联系电话" align="center"></el-table-column>
+                    </el-table>
+                </el-col>
+            </el-row>
+            <el-footer>
+                <el-pagination
+                  @current-change=changeTablePage2
+                  :current-page=currentPage2
+                  :page-size="30"
+                  layout="total, prev, pager, next, jumper"
+                  :total="groupsFound.length">
+                </el-pagination>
+            </el-footer>
+        </el-tab-pane>
+    </el-tabs>
+</template>
+
+<style>
+    .el-table table td { padding: 5px 0; }
+    .el-table table tbody td { padding: 5px 0; }
+    .el-dropdown-link { cursor: pointer; }
+    .el-textarea .el-input__count { background: rgba(255,255,255,0); height: 25px; }
+    .el-footer { padding-top: 22px; text-align: center; }
+    .searchtype .el-select .el-input { width: 110px; }
+    .input-with-select { width: 600px; text-align: center; }
+    .avatarblock { padding-left: 55px; padding-top: 55px; }
+</style>
+
+<script>
+    Vue.component('guest-page', {
+        template:'#guest-page',
+        //打开/刷新时获取数据
+        beforeMount: function () {
+            if(sessionStorage.getItem("username") != null){
+                this.getdata();
+            }
+        },
+        data() {
+        return {
+            //房间类型和详细房间总数据
+                guests:[],
+                groups:[],
+            //准备显示的结果
+                guestsFound:[],
+                groupsFound:[],
+            //正在显示的部分
+                guests1:[],
+                groups1:[],
+                groups2:[],
+            //单击的行    
+                currentRow: null,
+            //初始激活的表格  
+                activeName: 'first',
+            //搜索类别
+                select1:'3',
+                select2:'1',
+            //搜索内容
+                input1:'',
+                input2:'',
+            //当期页
+                currentPage1:1,
+                currentPage2:1,
+            //当前团队的表格页
+                page:1,
+            //头像
+                URL:"../server/guestpics.php?guestid=0"
+            }
+        },
+        methods: {
+        //切换页面
+            subpage4() { 
+                return 'display:' + ( 
+                    sessionStorage.getItem("currentpage") == "4" ? "block":"none") ;
+            },
+        //获取初始数据
+            getdata() {
+                if(sessionStorage.getItem("currentpage") != "4"){return;}
+                var self = this;
+                axios.get('../server/guestsinfo.php', {
+                    params: {
+                        username:sessionStorage.getItem("username")//发送用户名以查权限申请获得数据
+                    }
+                })
+                .then(function (response) {
+                    //console.log(response.data);
+                    let data=response.data;
+                    if(data.state=="OK"){
+                        console.log("get guests and groups data successfully!"); 
+                        self.guests=[];
+                        self.groups=[];
+                        for (var i = data.guests.length - 1; i >= 0; i--) {
+                            self.guests.push(data.guests[i]);
+                            self.guestsFound.push(data.guests[i]);
+                            if(self.guestsFound.length<=15){
+                                self.guests1.push(data.guests[i]);
+                            }
+                        }
+                        for (var i = data.groups.length - 1; i >= 0; i--) {
+                            self.groups.push(data.groups[i]);
+                            self.groupsFound.push(data.groups[i]);
+                            if(self.groupsFound.length<=15){
+                                self.groups1.push(data.groups[i]);
+                            }else if(self.groupsFound.length<=30){
+                                self.groups2.push(data.groups[i]);
+                            }
+                        }
+                    }else{
+                        console.log('error: get guests and groups state != OK');
+                        vue.$message.error(data.state);
+                    }
+                })
+                .catch(function (error) {
+                    console.log(error);
+                    vue.$message.error('网络异常');
+                }) 
+            },
+        //单击行函数
+            handleCurrentChange(val) {
+                this.currentRow = val;
+            },
+        //切换显示的表格页
+            changeTablePage1(page){
+                this.guests1=[];
+                for (var i = Math.min(page*15-1,this.guestsFound.length-1); i >= (page-1)*15; i--) {
+                    this.guests1.push(this.guestsFound[i]);
+                }
+            },
+            changeTablePage2(page){
+                this.page=page;
+                this.groups1=[];
+                this.groups2=[];
+                var k=0;
+                for (var i = Math.min(page*30-1,this.groupsFound.length-1); i >= (page-1)*30; i--) {
+                    if(k<15){
+                        this.groups1.push(this.groupsFound[i]);
+                    }else{
+                        this.groups2.push(this.groupsFound[i]);
+                    }
+                    k++;
+                }
+            },
+        //显示搜索结果
+            showGuests(){
+                this.guestsFound=[];
+                if(this.select1==1){
+                    this.guestsFound=this.guests.filter(data => !this.input1 || data.IDnumber.toLowerCase().includes(this.input1.toLowerCase()));
+                }else if(this.select1==2){
+                    this.guestsFound=this.guests.filter(data => !this.input1 || data.name.toLowerCase().includes(this.input1.toLowerCase()));
+                }else if(this.select1==3){
+                    this.guestsFound=this.guests.filter(data => !this.input1 || data.telephone.toLowerCase().includes(this.input1.toLowerCase()));
+                }else if(this.select1==4){
+                    this.guestsFound=this.guests.filter(data => !this.input1 || data.roomid.toLowerCase().includes(this.input1.toLowerCase()));
+                }else if(this.select1==5){
+                    this.guestsFound=this.guests.filter(data => !this.input1 || data.groupname.toLowerCase().includes(this.input1.toLowerCase()));
+                }
+                this.changeTablePage1(1);
+            },
+            showGroups(){
+                this.groupsFound = [];
+                if(this.select2==1){
+                    this.groupsFound = this.groups.filter(data => !this.input2 || data.groupname.toLowerCase().includes(this.input2.toLowerCase()));
+                }else if(this.select2==2){
+                    this.groupsFound = this.groups.filter(data => !this.input2 || data.contactname.toLowerCase().includes(this.input2.toLowerCase()));
+                }else if(this.select2==3){
+                    this.groupsFound = this.groups.filter(data => !this.input2 || data.contacttel.toLowerCase().includes(this.input2.toLowerCase()));
+                }
+                this.changeTablePage2(1);
+            },
+        //显示照片
+            showphoto(e) {
+                this.URL = "../server/guestpics.php?a="+Math.random()+"&guestid="+e.guestid;
+            }
+        }
+    });
+</script>

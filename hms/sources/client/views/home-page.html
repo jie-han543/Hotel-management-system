@@ -1,0 +1,333 @@
+<!--home页面组件-->
+<template id="home-page">
+    <div id="HomePage" :style=page2>
+    <el-container>
+        <el-header>
+            <el-row :gutter="20" align="middle">
+                <el-col :xs="3" :sm="2" :md="2" :lg="1" :xl="1">
+                    <el-image style="width: 53px; height: 53px" src="../pics/default.png" fit="fill"></el-image>
+                </el-col>
+                <el-col :xs="9" :sm="7" :md="6" :lg="5" :xl="5"><h4>&nbsp;&nbsp;&nbsp;客房管理系统</h4></el-col>
+                <el-col :xs="0" :sm="7" :md="10" :lg="12" :xl="14">&nbsp;</el-col>
+                <el-col :xs="7" :sm="4" :md="3" :lg="3" :xl="2"><p>欢迎，{{ currentuser() }}</p></el-col>
+                <el-col :xs="5" :sm="4" :md="3" :lg="3" :xl="2">
+                    <el-button type="text" @click="dialogFormVisible = true">我的</el-button>
+                    <el-button type="text" @click="quithms">退出</el-button>
+                </el-col>
+            </el-row>
+
+            <!--我的信息弹出框-->
+                <el-dialog width="40%" title="我的信息" :visible.sync="dialogFormVisible" :close-on-click-modal=false :before-close="handleClose1">
+                    <el-form :model="form" :rules="rules1" ref="form" class="demo-ruleForm" label-position="left" status-icon>
+                        <el-form-item>
+                            <portrait :disabled="false"></portrait> 
+                        </el-form-item>
+                        <el-form-item label="用户名" :label-width="formLabelWidth" prop="username">
+                            <el-input v-model="form.username" autocomplete="off"></el-input>
+                        </el-form-item>
+                        <el-form-item label="姓名" :label-width="formLabelWidth" prop="name">
+                            <el-input v-model="form.name" autocomplete="off"></el-input>
+                        </el-form-item>
+                        <el-form-item label="性别" :label-width="formLabelWidth">
+                            <el-radio v-model="form.sex" label="M">男</el-radio>
+                            <el-radio v-model="form.sex" label="F">女</el-radio>
+                        </el-form-item>
+                        <el-form-item label="职位" :label-width="formLabelWidth" prop="job">
+                            <el-input v-model="form.job" autocomplete="off"></el-input>
+                        </el-form-item>
+                        <el-form-item label="联系电话" :label-width="formLabelWidth" prop="telephone">
+                            <el-input v-model="form.telephone" autocomplete="off"></el-input>
+                        </el-form-item>
+                    </el-form>
+                    <div slot="footer" class="dialog-footer">
+                        <el-button type="text" @click="innerVisible = true">修改密码</el-button>
+                        <el-button @click="dialogFormVisible = false; resetForm('form')">取消</el-button>
+                        <el-button @click="resetForm('form')">重置</el-button>
+                        <el-button type="primary" @click="submitForm('form')">保存</el-button>
+                    </div>
+                </el-dialog>
+
+            <!--修改密码弹出框-->
+                <el-dialog width="30%" title="修改密码" :visible.sync="innerVisible" append-to-body :close-on-click-modal=false :before-close="handleClose2">
+                    <el-form :model="ruleForm" :rules="rules2" ref="ruleForm" class="demo-ruleForm" label-position="left" status-icon>
+                        <el-form-item label="新密码" prop="pass">
+                            <el-input type="password" v-model="ruleForm.pass" autocomplete="off"></el-input>
+                        </el-form-item>
+                        <el-form-item label="确认密码" prop="checkPass">
+                            <el-input type="password" v-model="ruleForm.checkPass" autocomplete="off"></el-input>
+                        </el-form-item>
+                    </el-form>
+                    <div slot="footer" class="dialog-footer">
+                        <el-button @click="innerVisible = false; resetForm('ruleForm')">取消</el-button>
+                        <el-button @click="resetForm('ruleForm')">重置</el-button>
+                        <el-button type="primary" @click="submitForm('ruleForm')">保存</el-button>
+                    </div>
+                </el-dialog>
+
+        </el-header>
+
+        <el-container>
+            <el-aside width="200px">
+                <el-menu :default-openeds="[1]" class="el-menu-vertical-demo" :collapse="isCollapse" unique-opened @select="changepage">
+                    <el-submenu index="1">
+                        <template slot="title"><i class="el-icon-house"></i><span slot="title">客房状态</span></template>
+                        <el-menu-item-group>
+                            <el-menu-item index="1-1">查看</el-menu-item>
+                            <el-menu-item index="1-2">预约</el-menu-item>
+                            <el-menu-item index="1-3">入住</el-menu-item>
+                            <el-menu-item index="1-4">退房</el-menu-item>
+                        </el-menu-item-group>
+                    </el-submenu>
+                    <el-menu-item index="2" :disabled="show('2')">
+                        <i class="el-icon-table-lamp"></i><span slot="title">客房管理</span>
+                    </el-menu-item>
+                    <el-menu-item index="3" :disabled="show('3')">
+                        <i class="el-icon-star-off"></i><span slot="title">用户管理</span>
+                    </el-menu-item>
+                    <el-menu-item index="4">
+                        <i class="el-icon-user"></i><span slot="title">客户信息</span>
+                    </el-menu-item>
+                    <el-menu-item index="5" :disabled="show('5')">
+                        <i class="el-icon-receiving"></i><span slot="title">交易记录</span>
+                    </el-menu-item>
+                    <el-footer id="hide-icon">
+                        <el-menu-item v-model="isCollapse" id="hide-menu" index="6">
+                            <i :class="icon"></i><span slot="title">{{ isCollapse?"展开":"隐藏" }}</span>
+                        </el-menu-item>
+                    </el-footer>
+                </el-menu>
+            </el-aside>
+
+            <el-main>
+                <view-page></view-page>
+                <order-page></order-page>
+                <checkin-page></checkin-page>
+                <checkout-page></checkout-page>
+                <rooms-page></rooms-page>
+                <users-page></users-page>
+                <guest-page></guest-page>
+                <records-page></records-page>
+            </el-main>
+        </el-container>
+
+    </el-container>
+    </div>
+</template>
+
+<style>
+    #HomePage { height: 100%; }
+    .el-container .el-header .el-row .el-col * { margin:0; padding: 0; border-width: 0; line-height: 60px; }
+    .el-container .el-header .el-row .el-col p { color: #606266; }
+    .el-submenu .el-menu-item { padding: 0; min-width: 180px; height: 42px; font-size: small; }
+    .el-menu span { font-size: initial; }
+    .el-menu-item-group__title { padding: 0; }
+    .el-menu-item-group{ border-top: ridge; border-top-width: thin; border-bottom: ridge; border-bottom-width: thin; }
+    .el-container .el-header .el-row .el-col .el-button { padding:0 5px; }
+    .el-header{ background-color: #DCDFE6; }
+    .el-menu-vertical-demo:not(.el-menu--collapse) { width: 180px; }
+    #app { position: absolute; width: 100%; height: 100%; margin: 0; padding: 0; }
+    .el-container, .el-menu { height: 100%; }
+    #hide-menu { position:absolute; bottom:10px; width: 100%;} 
+    #hide-menu span { font-size: inherit;}
+    #hide-icon { padding: 0; }
+</style>
+
+<script>
+    Vue.component('home-page',{
+        template: '#home-page',
+        data() {
+        //弹出框校验规则 
+            var validateData = (rule, value, callback) =>{
+                if(value.trim().length > 20) {
+                    callback(new Error('用户名不能超过20个字符'));
+                }else{
+                    if(!/^[-A-Za-z0-9]{1,20}$/.test(value.trim())) {
+                        callback(new Error('用户名只能包含字母、数字、_和-，不超过20字'));
+                    }
+                }
+                callback();
+            };
+            var validateData2 = (rule, value, callback) =>{
+                if (value === '') {
+                    callback(new Error('姓名不能为空'));
+                }
+                if(value.trim().length > 20) {
+                    callback(new Error('姓名不能超过20个字符'));
+                }
+                callback();
+            };
+            var validateData3 = (rule, value, callback) =>{
+                if(value.trim().length > 20) {
+                    callback(new Error('职位不能超过20个字符'));
+                }
+                callback();
+            };
+            var validateData4 = (rule, value, callback) =>{
+                if (value === '') {
+                    callback(new Error('联系电话不能为空'));
+                }
+                if(!/^[-0-9]{1,20}$/.test(value.trim())) {
+                    callback(new Error('只能包含数字和-，不超过20个字符'));
+                }
+                callback();
+            };
+            var validatePass = (rule, value, callback) => {
+                if (value === '') {
+                    callback(new Error('请输入密码'));
+                }else if(value.length > 20) {
+                    callback(new Error('密码不能超过20个字符'));
+                }else {
+                    if (this.ruleForm.checkPass !== '') {
+                        this.$refs.ruleForm.validateField('checkPass');
+                    }
+                    callback();
+                }
+            };
+            var validatePass2 = (rule, value, callback) => {
+                if (value === '') {
+                    callback(new Error('请再次输入密码'));
+                } else if (value !== this.ruleForm.pass) {
+                    callback(new Error('两次输入密码不一致!'));
+                } else {
+                    callback();
+                }
+            };
+            return {
+                isCollapse: false,
+                dialogFormVisible: false,
+                innerVisible: false,
+                formLabelWidth: '100px',
+                form: {
+                    username: sessionStorage.getItem("username"),
+                    name: sessionStorage.getItem("name"),
+                    sex: sessionStorage.getItem("sex"),
+                    job: sessionStorage.getItem("job"),
+                    telephone: sessionStorage.getItem("telephone")
+                },
+                ruleForm: {
+                    pass: '',
+                    checkPass: ''
+                },
+                rules1: {
+                    username:[
+                        { validator: validateData, trigger: 'blur' }
+                    ],
+                    name:[
+                        { validator: validateData2, trigger: 'blur' }
+                    ],
+                    job: [
+                        { validator: validateData3, trigger: 'blur' }
+                    ],
+                    telephone: [
+                        { validator: validateData4, trigger: 'blur' }
+                    ],
+                },
+                rules2: {
+                    pass: [
+                        { validator: validatePass, trigger: 'blur' }
+                    ],
+                    checkPass: [
+                        { validator: validatePass2, trigger: 'blur' }
+                    ]
+                }
+            };
+        },
+        methods: {
+        //切换页面按钮
+            changepage(index,indexPath){
+                if(index == "6"){ this.isCollapse =! this.isCollapse; return; }
+                sessionStorage.setItem("currentpage", index);
+                this.$emit("refreshui"); 
+            },
+        //提交弹窗数据
+            submitForm(formName){
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                        var self = this;
+                        axios.get( 
+                            formName == 'form' ? '../server/admins.php':'../server/adminspw.php',{
+                            params: formName == 'form' ? {
+                                olduser:sessionStorage.getItem("username"),
+                                username:self.form.username, 
+                                name:self.form.name,
+                                sex:self.form.sex,
+                                job:self.form.job,
+                                telephone:self.form.telephone
+                            }:{
+                                olduser:sessionStorage.getItem("username"),
+                                password:hex_md5(self.ruleForm.pass+"myhms")
+                            }
+                        })
+                        .then( function (response) {
+                            //console.log(formName);
+                            let data=response.data;
+                            if(data.state=="OK1"){
+                                console.log("change successfully!");
+                                //储存数据
+                                sessionStorage.setItem("username", self.form.username);
+                                sessionStorage.setItem("name", self.form.name);
+                                sessionStorage.setItem("sex", self.form.sex);
+                                sessionStorage.setItem("job", self.form.job);
+                                sessionStorage.setItem("telephone", self.form.telephone); 
+                                vue.$message.success('已提交');
+                                self.dialogFormVisible = false;                   
+                                //实现单击按钮跳转页面   
+                                self.$forceUpdate(); 
+                            }else if(data.state=="OK2"){                            
+                                self.innerVisible = false;
+                                vue.$message.success('密码修改成功');
+                            }else{
+                                console.log('error');
+                                vue.$message.error(data.state);
+                            }
+                        })
+                        .catch(function (error) {
+                            console.log(error);
+                            vue.$message.error('网络异常');
+                        }) 
+                    } else {
+                        console.log('error submit!!');//未通过数据验证
+                        return false;
+                    }
+                });               
+            },
+        //重置/取消/退出清空弹窗内容函数
+            resetForm(formName) {
+                this.$refs[formName].resetFields();
+            },
+            handleClose1(done) {
+                this.resetForm("form");
+                done();
+            },
+            handleClose2(done) {
+                this.resetForm("ruleForm");
+                done();
+            },
+        //退出函数
+            quithms(){
+                sessionStorage.clear();
+                document.getElementById("LoginPage").style.display="block";
+                document.getElementById("HomePage").style.display="none";                   
+            },
+        //欢迎+姓名处获取用户名
+            currentuser(){
+                return sessionStorage.getItem("name");
+            },
+            show(index){
+                mypermission=sessionStorage.getItem("permissions");
+                switch(index) {
+                    case '2': return((mypermission & 1) == 0);
+                    case '3': return((mypermission & 2) == 0);
+                    case '5': return((mypermission & 4) == 0);
+                }
+            }
+        },
+        computed: { 
+        //实现刷新时页面的显示与隐藏
+            page2: function() { return 'display:' + (sessionStorage.getItem("state")=="OK"?"block":"none"); },
+        //隐藏键的图标显示
+            icon: function(){return this.isCollapse?"el-icon-arrow-right":"el-icon-arrow-left"}
+        }
+    });
+
+</script>

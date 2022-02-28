@@ -1,0 +1,286 @@
+<template id="records-page">
+    <el-tabs v-model="activeName" type="border-card" :style=subpage5() @tab-click=getPage>
+        <el-tab-pane label="预约记录" name="first">
+            <div class="timepicker"><el-date-picker v-model="time1" type="daterange" unlink-panels class="timepicker"
+              @change="getdata('first')" :default-time="['00:00:00', '23:59:59']"
+              range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" :picker-options="pickerOptions">
+            </el-date-picker></div>
+            <el-table :data="orderRecord" style="width: 100%" height=595 highlight-current-row @current-change="handleCurrentChange" ref="orderRecord">
+                <el-table-column prop="orderid" label="订单号" width="200" align="center"></el-table-column>
+                <el-table-column prop="name" label="顾客/团队" width="200" align="center"></el-table-column>
+                <el-table-column prop="sex" label="性别" width="200" align="center"></el-table-column>
+                <!--el-table-column prop="age" label="年龄" width="150" align="center"></el-table-column-->
+                <el-table-column prop="telephone" label="电话" width="200" align="center"></el-table-column>
+                <el-table-column prop="roomid" label="预约房号" width="200" align="center"></el-table-column>
+                <el-table-column prop="time" label="预抵时间" width="200" align="center"></el-table-column>
+                <el-table-column prop="predictdays" label="预约天数" align="center"></el-table-column>
+            </el-table>
+            <div class="timepicker"><el-pagination :page-size="16" :pager-count="11" layout="prev, pager, next" :total=lines1 :current-page.sync=page1 @current-change="getdata('first')"></el-pagination></div>
+        </el-tab-pane>
+        <el-tab-pane label="入住记录" name="second">
+            <div class="timepicker"><el-date-picker v-model="time2" type="daterange" unlink-panels class="timepicker" 
+                @change="getdata('second')" :default-time="['00:00:00', '23:59:59']"
+              range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" :picker-options="pickerOptions">
+            </el-date-picker></div>
+            <el-table :data="CheckInRecord" style="width: 100%" height=595 highlight-current-row @current-change="handleCurrentChange" ref="CheckInRecord">
+                <el-table-column prop="orderid" label="订单号" width="200" align="center"></el-table-column>
+                <el-table-column prop="name" label="顾客/团队" width="200" align="center"></el-table-column>
+                <el-table-column prop="sex" label="性别" width="140" align="center"></el-table-column>
+                <el-table-column prop="age" label="年龄" width="140" align="center"></el-table-column>
+                <el-table-column prop="telephone" label="电话" width="150" align="center"></el-table-column>
+                <el-table-column prop="roomid" label="房间号" width="150" align="center"></el-table-column>
+                <el-table-column prop="time" label="入住时间" width="150" align="center"></el-table-column>
+                <el-table-column prop="predictdays" label="预住天数" width="150" align="center"></el-table-column>
+                <el-table-column prop="bill" label="房间价格" align="center"></el-table-column>
+            </el-table>
+            <div class="timepicker"><el-pagination :page-size="16" :pager-count="11" layout="prev, pager, next" :total=lines2 
+                :current-page.sync=page2 @current-change="getdata('second')"></el-pagination></div>
+        </el-tab-pane>
+        <el-tab-pane label="退房记录" name="third">
+            <div class="timepicker"><el-date-picker v-model="time3" type="daterange" unlink-panels class="timepicker" 
+                @change="getdata('third')" :default-time="['00:00:00', '23:59:59']"
+              range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" :picker-options="pickerOptions">
+            </el-date-picker></div>
+            <el-table :data="CheckOutRecord" style="width: 100%" height=595 highlight-current-row @current-change="handleCurrentChange" ref="CheckOutRecord">
+                <el-table-column prop="orderid" label="订单号" width="200" align="center"></el-table-column>
+                <el-table-column prop="name" label="顾客/团队" width="180" align="center"></el-table-column>
+                <el-table-column prop="sex" label="性别" width="100" align="center"></el-table-column>
+                <el-table-column prop="age" label="年龄" width="100" align="center"></el-table-column>
+                <el-table-column prop="telephone" label="电话" width="150" align="center"></el-table-column>
+                <el-table-column prop="roomid" label="房间号" width="150" align="center"></el-table-column>
+                <el-table-column prop="time" label="退房时间" width="150" align="center"></el-table-column>
+                <el-table-column prop="predictdays" label="入住天数" width="120" align="center"></el-table-column>
+                <el-table-column prop="bill" label="账单" width="150" align="center"></el-table-column>
+                <el-table-column prop="payment" label="支付方式" align="center"></el-table-column>
+            </el-table>
+            <div class="timepicker"><el-pagination :page-size="16" :pager-count="11" layout="prev, pager, next" :total=lines3 :current-page.sync=page3 @current-change="getdata('third')"></el-pagination></div>
+        </el-tab-pane>
+        <el-tab-pane label="日收入报表" name="forth">
+            <div class="timepicker"><el-date-picker v-model="time4" type="daterange" unlink-panels class="timepicker" 
+                @change="getdata('forth')" :default-time="['00:00:00', '23:59:59']"
+              range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" :picker-options="pickerOptions">
+            </el-date-picker></div>
+            <el-row>
+                <el-col :span="4">&nbsp;</el-col>
+                <el-col :span="16">
+                    <el-table :data="billRecord1" style="width: 100%" highlight-current-row @current-change="handleCurrentChange" ref="billRecord1" :show-summary=true>
+                        <el-table-column prop="date" label="日期" width="200" align="center"></el-table-column>
+                        <el-table-column prop="Cash" label="现金支付总金额" width="200" align="center"></el-table-column>
+                        <el-table-column prop="Card" label="银行卡支付总金额" width="200" align="center"></el-table-column>
+                        <el-table-column prop="Online" label="在线支付总金额" width="200" align="center"></el-table-column>
+                        <el-table-column prop="total" label="总价" align="center"></el-table-column>
+                    </el-table>
+                    <div class="timepicker"><el-pagination :page-size="16" :pager-count="11" layout="prev, pager, next" :total=lines4 
+                        :current-page.sync=page4 @current-change="getdata('forth')"></el-pagination></div>
+                </el-col>
+                <el-col :span="4">&nbsp;</el-col>
+            </el-row>
+        </el-tab-pane>
+        <el-tab-pane label="月收入报表" name="fifth">
+            <div class="timepicker"><el-date-picker v-model="time5" type="year" placeholder="选择年" @change="getdata('fifth')"></el-date-picker></div>
+            <el-row>
+                <el-col :span="4">&nbsp;</el-col>
+                <el-col :span="16">
+                    <el-table :data="billRecord2" style="width: 100%" highlight-current-row @current-change="handleCurrentChange" ref="billRecord2" :show-summary=true>
+                        <el-table-column prop="month" label="月份" width="200" align="center"></el-table-column>
+                        <el-table-column prop="Cash" label="现金支付总金额" width="200" align="center"></el-table-column>
+                        <el-table-column prop="Card" label="银行卡支付总金额" width="200" align="center"></el-table-column>
+                        <el-table-column prop="Online" label="在线支付总金额" width="200" align="center"></el-table-column>
+                        <el-table-column prop="total" label="总价" align="center"></el-table-column>
+                    </el-table>
+                </el-col>
+                <el-col :span="4">&nbsp;</el-col>
+            </el-row>
+        </el-tab-pane>
+    </el-tabs>
+</template>
+
+<style>
+    .timepicker { text-align: center; }
+</style>
+
+<script>
+    Vue.component('records-page', {
+        template:'#records-page',
+        //打开/刷新时获取数据
+        beforeMount: function () {
+            if((sessionStorage.getItem("permissions") & 4) != 0){
+                this.getdata('first');
+            }
+        },
+        data() {
+            return {
+                activeName:'first',
+            //页数
+                lines1:1,
+                lines2:1,
+                lines3:1,
+                lines4:1,
+                lines5:1,
+                page1:1,
+                page2:1,
+                page3:1,
+                page4:1,
+                page5:1,
+            //时间
+                time1:'',
+                time2:'',
+                time3:'',
+                time4:'',
+                time5:'',
+            //获取的数据
+                orderRecord:[],
+                CheckInRecord:[],
+                CheckOutRecord:[],
+                billRecord1:[],
+                billRecord2:[],
+            //时间选择器
+                pickerOptions: {
+                    shortcuts: [{
+                        text: '最近一周',
+                        onClick(picker) {
+                          const end = new Date();
+                          const start = new Date();
+                          start.setHours(0, 0, 0, 0);
+                          end.setHours(23,59,59,999);
+                          start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+                          picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: '最近一个月',
+                        onClick(picker) {
+                          const end = new Date();
+                          const start = new Date();
+                          start.setHours(0, 0, 0, 0);
+                          end.setHours(23,59,59,999);
+                          start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+                          picker.$emit('pick', [start, end]);
+                        }
+                    }, {
+                        text: '最近三个月',
+                        onClick(picker) {
+                          const end = new Date();
+                          const start = new Date();
+                          start.setHours(0, 0, 0, 0);
+                          end.setHours(23,59,59,999);
+                          start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
+                          picker.$emit('pick', [start, end]);
+                        }
+                    }]
+                }
+            }
+        },
+        methods: {
+        //切换页面
+            subpage5() {
+                var allow = ((sessionStorage.getItem("permissions") & 4) != 0);
+                return 'display:' + ( 
+                    sessionStorage.getItem("currentpage") == "5" && allow ? "block":"none") ;
+            },
+        //获取初始数据
+            getdata(type) {
+                if(sessionStorage.getItem("currentpage") != "5"){return;}
+                var self = this;
+                var PHPURL = '../server/records1.php'; 
+                var time = this.time1;
+                var page = this.page1;
+                if(type=='second') {PHPURL = '../server/records2.php'; time = this.time2; page = this.page2;}
+                if(type=='third') {PHPURL = '../server/records3.php'; time = this.time3; page = this.page3;}
+                if(type=='forth') {PHPURL = '../server/records4.php'; time = this.time4; page = this.page4;}
+                if(type=='fifth') {PHPURL = '../server/records5.php'; time = this.time5; page = this.page5;}
+                if(typeof(time)=="object" && type!='fifth' && time!=null){
+                    time[0]=time[0].UTCtoLOC();
+                    time[1]=time[1].UTCtoLOC();
+                }else if(type=='fifth' && (time=='' || time==null)){
+                    //console.log(time);
+                    time = new Date();
+                    time.setMonth(0,1);
+                    time.setHours(0, 0, 0, 0);
+                    time = time.UTCtoLOC();
+                }else if(type=='fifth'){ time = time.UTCtoLOC(); }
+                else if(time==null){ time=''; }
+                axios.get( PHPURL, {
+                    params: {
+                        username:sessionStorage.getItem("username"),//发送用户名以查权限申请获得数据
+                        time:time,
+                        type:type,
+                        page:page
+                    }
+                })
+                .then(function (response) {
+                    //console.log(response.data);
+                    if(typeof(response.data)=='string'){
+                        data=eval('('+response.data+')');
+                    }else{
+                        data=response.data;
+                    }
+                    if(data.state=="OK"){
+                        console.log("get records data successfully!");
+                        //console.log(data.type);
+                        switch(data.type){
+                            case "first":
+                                self.orderRecord=[];
+                                self.lines1=data.lines;
+                                for (var i = data.records.length - 1; i >= 0; i--) {
+                                    self.orderRecord.push(data.records[i]);
+                                }
+                                self.$forceUpdate();
+                                break;
+                            case "second":
+                                self.CheckInRecord=[];
+                                self.lines2=data.lines;
+                                for (var i = data.records.length - 1; i >= 0; i--) {
+                                    self.CheckInRecord.push(data.records[i]);
+                                }
+                                self.$forceUpdate();
+                                break;
+                            case "third":
+                                self.CheckOutRecord=[];
+                                self.lines3=data.lines;
+                                for (var i = data.records.length - 1; i >= 0; i--) {
+                                    self.CheckOutRecord.push(data.records[i]);
+                                }
+                                self.$forceUpdate();
+                                break;
+                            case "forth":
+                                self.billRecord1=[];
+                                self.lines4=data.lines;
+                                for (var i = data.records.length - 1; i >= 0; i--) {
+                                    self.billRecord1.push(data.records[i]);
+                                }
+                                self.$forceUpdate();
+                                break;
+                            case "fifth":
+                                self.billRecord2=[];
+                                self.lines5=data.lines;
+                                for (var i = data.records.length - 1; i >= 0; i--) {
+                                    self.billRecord2.push(data.records[i]);
+                                }
+                                self.$forceUpdate();
+                                break;
+                            default:
+                                console.log("参数错误");
+                        }  
+                    }else{
+                        console.log('error: get records state != OK');
+                        vue.$message.error(data.state);
+                    }
+                })
+                .catch(function (error) {
+                    //console.log(page);
+                    //console.log(type);
+                    vue.$message.error('网络异常');
+                }) 
+            },
+        //单击行函数
+            handleCurrentChange(val) {
+                this.currentRow = val;
+            },
+            getPage(val){
+                //if(!val){return 'first';}
+                //return val.name;
+                this.getdata(val.name);
+            }
+        }
+    });
+</script>
